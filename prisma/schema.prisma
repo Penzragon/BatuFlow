@@ -130,6 +130,7 @@ model CustomerContact {
 
   customer Customer @relation(fields: [customerId], references: [id])
 
+  @@index([customerId])
   @@map("customer_contacts")
 }
 
@@ -180,6 +181,7 @@ model ProductPriceTier {
 
   product Product @relation(fields: [productId], references: [id])
 
+  @@index([productId])
   @@map("product_price_tiers")
 }
 
@@ -195,6 +197,7 @@ model ProductCapitalHistory {
 
   product Product @relation(fields: [productId], references: [id])
 
+  @@index([productId])
   @@map("product_capital_history")
 }
 
@@ -210,6 +213,7 @@ model ProductSellPriceHistory {
 
   product Product @relation(fields: [productId], references: [id])
 
+  @@index([productId])
   @@map("product_sell_price_history")
 }
 
@@ -279,6 +283,8 @@ model StockLedger {
   product   Product   @relation(fields: [productId], references: [id])
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
 
+  @@index([productId, warehouseId])
+  @@index([createdAt])
   @@map("stock_ledger")
 }
 
@@ -374,6 +380,8 @@ model SalesOrderLine {
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   product    Product    @relation(fields: [productId], references: [id])
 
+  @@index([salesOrderId])
+  @@index([productId])
   @@map("sales_order_lines")
 }
 
@@ -438,6 +446,7 @@ model DeliveryOrderLine {
   deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
   product       Product       @relation(fields: [productId], references: [id])
 
+  @@index([deliveryOrderId])
   @@map("delivery_order_lines")
 }
 
@@ -1021,6 +1030,7 @@ model AuditLogChange {
 
   auditLog AuditLog @relation(fields: [auditLogId], references: [id])
 
+  @@index([auditLogId])
   @@map("audit_log_changes")
 }
 
@@ -1207,6 +1217,7 @@ model GoodsReceiptLine {
   goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
   product      Product      @relation(fields: [productId], references: [id])
 
+  @@index([goodsReceiptId])
   @@map("goods_receipt_lines")
 }
 
@@ -1250,6 +1261,7 @@ model PickListLine {
   product           Product            @relation(fields: [productId], references: [id])
   warehouseLocation WarehouseLocation? @relation(fields: [warehouseLocationId], references: [id])
 
+  @@index([pickListId])
   @@map("pick_list_lines")
 }
 
@@ -1291,6 +1303,7 @@ model StockOpnameLine {
   stockOpname StockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
   product     Product     @relation(fields: [productId], references: [id])
 
+  @@index([stockOpnameId])
   @@map("stock_opname_lines")
 }
 
@@ -1325,6 +1338,7 @@ model HandoverLine {
   handover      Handover      @relation(fields: [handoverId], references: [id], onDelete: Cascade)
   deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
 
+  @@index([handoverId])
   @@map("handover_lines")
 }
 

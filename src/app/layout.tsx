@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "BatuFlow - Distribution ERP",
   description:
     "BatuFlow - Distribution & Wholesale ERP. Manage sales, inventory, finance, and operations in one platform.",
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({

@@ -90,14 +90,14 @@ export default function HandoversPage() {
       header: t("trip"),
       cell: ({ row }) => (
         <button className="font-mono text-sm font-medium text-primary underline" onClick={() => router.push(`/inventory/handovers/${row.original.id}`)}>
-          {row.original.trip.tripNumber}
+          {row.original.trip?.tripNumber ?? "—"}
         </button>
       ),
     },
-    { id: "warehouseStaff", accessorFn: (row) => row.warehouseStaff?.name ?? "", header: t("warehouseStaff"), cell: ({ row }) => row.original.warehouseStaff.name },
-    { id: "driver", accessorFn: (row) => row.driver?.name ?? "", header: t("driver"), cell: ({ row }) => row.original.driver.name },
+    { id: "warehouseStaff", accessorFn: (row) => row.warehouseStaff?.name ?? "", header: t("warehouseStaff"), cell: ({ row }) => row.original.warehouseStaff?.name ?? "—" },
+    { id: "driver", accessorFn: (row) => row.driver?.name ?? "", header: t("driver"), cell: ({ row }) => row.original.driver?.name ?? "—" },
     { accessorKey: "status", header: t("status"), cell: ({ row }) => <StatusBadge status={row.original.status.toLowerCase()} /> },
-    { id: "lines", accessorFn: (row) => row._count?.lines ?? 0, header: "DOs", cell: ({ row }) => row.original._count.lines },
+    { id: "lines", accessorFn: (row) => row._count?.lines ?? 0, header: "DOs", cell: ({ row }) => row.original._count?.lines ?? 0 },
     { accessorKey: "createdAt", header: "Date", cell: ({ row }) => format(new Date(row.original.createdAt), "dd/MM/yyyy HH:mm") },
   ];
 
