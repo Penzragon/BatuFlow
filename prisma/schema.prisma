@@ -1,0 +1,1448 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Users & Authentication
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          UserRole  @default(STAFF)
+  locale        String    @default("en")
+  isActive      Boolean   @default(true) @map("is_active")
+  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  employee            Employee?
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  importLogs          ImportLog[]
+  recentSearches      RecentSearch[]
+  notificationPrefs   NotificationPreference[]
+  assignedCustomers     Customer[]        @relation("SalespersonCustomers")
+  salesVisits           CustomerVisit[]
+  createdSalesOrders    SalesOrder[]      @relation("SOCreatedBy")
+  createdDOs            DeliveryOrder[]   @relation("DOCreatedBy")
+  driverTrips           Trip[]            @relation("DriverTrips")
+  createdTrips          Trip[]            @relation("TripCreatedBy")
+  createdGoodsReceipts  GoodsReceipt[]    @relation("GRCreatedBy")
+  verifiedGoodsReceipts GoodsReceipt[]    @relation("GRVerifiedBy")
+  confirmedGoodsReceipts GoodsReceipt[]   @relation("GRConfirmedBy")
+  createdPickLists      PickList[]        @relation("PLCreatedBy")
+  assignedPickLists     PickList[]        @relation("PLAssignedTo")
+  createdStockOpnames   StockOpname[]     @relation("SOPCreatedBy")
+  countedStockOpnames   StockOpname[]     @relation("SOPCountedBy")
+  confirmedStockOpnames StockOpname[]     @relation("SOPConfirmedBy")
+  handoversAsWhStaff    Handover[]        @relation("HandoverWhStaff")
+  handoversAsDriver     Handover[]        @relation("HandoverDriver")
+  createdJournalEntries JournalEntry[]    @relation("JECreatedBy")
+  postedJournalEntries  JournalEntry[]    @relation("JEPostedBy")
+  submittedExpenses     Expense[]         @relation("ExpenseSubmittedBy")
+  approvedExpenses      Expense[]         @relation("ExpenseApprovedBy")
+  closedFiscalPeriods   FiscalPeriod[]    @relation("FPClosedBy")
+  approvedLeaves       LeaveRequest[]    @relation("LeaveApprovedBy")
+  createdPayrollRuns   PayrollRun[]      @relation("PayrollCreatedBy")
+  commissionRules     CommissionRule[]   @relation("CommissionRules")
+  commissions         Commission[]       @relation("Commissions")
+  assignedLeads       Lead[]            @relation("LeadAssignee")
+  activities          CustomerActivity[] @relation("UserActivities")
+  salesTargets        SalesTarget[]      @relation("SalesTargets")
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  DRIVER
+  WAREHOUSE_STAFF
+
+  @@map("user_role")
+}
+
+// Configurable permissions per role per module
+model RolePermission {
+  id        String   @id @default(uuid())
+  role      UserRole
+  module    String
+  action    String
+  allowed   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([role, module, action])
+  @@map("role_permissions")
+}
+
+// ─────────────────────────────────────────────
+// Customers & CRM
+// ─────────────────────────────────────────────
+
+model Customer {
+  id               String    @id @default(uuid())
+  name             String
+  address          String?
+  phone            String?
+  email            String?
+  taxId            String?   @map("tax_id")
+  paymentTermsDays Int       @default(30) @map("payment_terms_days")
+  salespersonId    String?   @map("salesperson_id")
+  region           String?
+  tier             String?
+  gpsLatitude      Float?    @map("gps_latitude")
+  gpsLongitude     Float?    @map("gps_longitude")
+  isActive         Boolean   @default(true) @map("is_active")
+  deletedAt        DateTime? @map("deleted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  salesperson  User?  @relation("SalespersonCustomers", fields: [salespersonId], references: [id])
+  contacts     CustomerContact[]
+  visits       CustomerVisit[]
+  salesOrders  SalesOrder[]
+  invoices     ArInvoice[]
+  activities   CustomerActivity[]
+  leads        Lead[]
+
+  @@map("customers")
+}
+
+model CustomerContact {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  name       String
+  phone      String?
+  email      String?
+  position   String?
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("customer_contacts")
+}
+
+// ─────────────────────────────────────────────
+// Products & Inventory
+// ─────────────────────────────────────────────
+
+model Product {
+  id          String    @id @default(uuid())
+  sku         String    @unique
+  name        String
+  description String?
+  category    String?
+  brand       String?
+  baseUom     String    @default("pcs") @map("base_uom")
+  capitalCost Float     @default(0) @map("capital_cost")
+  sellPrice   Float     @default(0) @map("sell_price")
+  minStock    Int       @default(0) @map("min_stock")
+  maxStock    Int       @default(0) @map("max_stock")
+  imageUrl    String?   @map("image_url")
+  isActive    Boolean   @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  priceTiers         ProductPriceTier[]
+  capitalHistory     ProductCapitalHistory[]
+  sellPriceHistory   ProductSellPriceHistory[]
+  uomConversions     ProductUomConversion[]
+  stockLedger        StockLedger[]
+  salesOrderLines    SalesOrderLine[]
+  deliveryOrderLines DeliveryOrderLine[]
+  goodsReceiptLines  GoodsReceiptLine[]
+  pickListLines      PickListLine[]
+  stockOpnameLines   StockOpnameLine[]
+
+  @@map("products")
+}
+
+model ProductPriceTier {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  minQty    Int     @map("min_qty")
+  maxQty    Int?    @map("max_qty")
+  unitPrice Float   @map("unit_price")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_price_tiers")
+}
+
+model ProductCapitalHistory {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  oldCost   Float    @map("old_cost")
+  newCost   Float    @map("new_cost")
+  changedAt DateTime @default(now()) @map("changed_at")
+  changedBy String   @map("changed_by")
+  source    String   @default("manual")
+  notes     String?
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_capital_history")
+}
+
+model ProductSellPriceHistory {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  oldPrice  Float    @map("old_price")
+  newPrice  Float    @map("new_price")
+  changedAt DateTime @default(now()) @map("changed_at")
+  changedBy String   @map("changed_by")
+  source    String   @default("manual")
+  notes     String?
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_sell_price_history")
+}
+
+model ProductUomConversion {
+  id             String  @id @default(uuid())
+  productId      String  @map("product_id")
+  fromUom        String  @map("from_uom")
+  toUom          String  @map("to_uom")
+  conversionRate Float   @map("conversion_rate")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_uom_conversions")
+}
+
+// ─────────────────────────────────────────────
+// Warehouse & Stock
+// ─────────────────────────────────────────────
+
+model Warehouse {
+  id        String    @id @default(uuid())
+  name      String
+  address   String?
+  isDefault Boolean   @default(false) @map("is_default")
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  locations      WarehouseLocation[]
+  stockLedger    StockLedger[]
+  stockOpnames   StockOpname[]
+  goodsReceipts  GoodsReceipt[]
+
+  @@map("warehouses")
+}
+
+model WarehouseLocation {
+  id          String   @id @default(uuid())
+  warehouseId String   @map("warehouse_id")
+  name        String
+  description String?
+  zone        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
+  pickListLines PickListLine[]
+
+  @@map("warehouse_locations")
+}
+
+model StockLedger {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  warehouseId   String   @map("warehouse_id")
+  movementType  StockMovementType @map("movement_type")
+  qty           Float
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String?  @map("created_by")
+
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@map("stock_ledger")
+}
+
+enum StockMovementType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+  OPNAME
+
+  @@map("stock_movement_type")
+}
+
+// ─────────────────────────────────────────────
+// Sales Core (Phase 2)
+// ─────────────────────────────────────────────
+
+model CustomerVisit {
+  id            String    @id @default(uuid())
+  customerId    String    @map("customer_id")
+  salespersonId String    @map("salesperson_id")
+  selfieUrl     String?   @map("selfie_url")
+  gpsLatitude   Float?    @map("gps_latitude")
+  gpsLongitude  Float?    @map("gps_longitude")
+  gpsAccuracy   Float?    @map("gps_accuracy")
+  distanceFromCustomer Float? @map("distance_from_customer")
+  checkInAt     DateTime  @default(now()) @map("check_in_at")
+  expiresAt     DateTime  @map("expires_at")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  salesperson User         @relation(fields: [salespersonId], references: [id])
+  salesOrders SalesOrder[]
+
+  @@index([salespersonId, customerId])
+  @@index([checkInAt])
+  @@map("customer_visits")
+}
+
+model SalesOrder {
+  id               String        @id @default(uuid())
+  soNumber         String        @unique @map("so_number")
+  customerId       String        @map("customer_id")
+  visitId          String?       @map("visit_id")
+  status           SOStatus      @default(DRAFT)
+  subtotal         Float         @default(0)
+  discountTotal    Float         @default(0) @map("discount_total")
+  ppnRate          Float         @default(0.11) @map("ppn_rate")
+  ppnAmount        Float         @default(0) @map("ppn_amount")
+  grandTotal       Float         @default(0) @map("grand_total")
+  notes            String?
+  needsApproval    Boolean       @default(false) @map("needs_approval")
+  approvalReason   String?       @map("approval_reason")
+  approvedBy       String?       @map("approved_by")
+  approvedAt       DateTime?     @map("approved_at")
+  rejectedBy       String?       @map("rejected_by")
+  rejectedAt       DateTime?     @map("rejected_at")
+  rejectionReason  String?       @map("rejection_reason")
+  createdBy        String        @map("created_by")
+  deletedAt        DateTime?     @map("deleted_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  customer       Customer          @relation(fields: [customerId], references: [id])
+  visit          CustomerVisit?    @relation(fields: [visitId], references: [id])
+  creator        User              @relation("SOCreatedBy", fields: [createdBy], references: [id])
+  lines          SalesOrderLine[]
+  deliveryOrders DeliveryOrder[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id              String  @id @default(uuid())
+  salesOrderId    String  @map("sales_order_id")
+  productId       String  @map("product_id")
+  productName     String  @map("product_name")
+  productSku      String  @map("product_sku")
+  uom             String  @default("pcs")
+  qty             Float
+  unitPrice       Float   @map("unit_price")
+  tierApplied     String? @map("tier_applied")
+  discountPercent Float   @default(0) @map("discount_percent")
+  discountAmount  Float   @default(0) @map("discount_amount")
+  priceOverride   Boolean @default(false) @map("price_override")
+  lineTotal       Float   @map("line_total")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@map("sales_order_lines")
+}
+
+enum SOStatus {
+  DRAFT
+  CONFIRMED
+  WAITING_APPROVAL
+  PARTIALLY_DELIVERED
+  FULLY_DELIVERED
+  CLOSED
+  CANCELLED
+
+  @@map("so_status")
+}
+
+model DeliveryOrder {
+  id              String         @id @default(uuid())
+  doNumber        String         @unique @map("do_number")
+  salesOrderId    String         @map("sales_order_id")
+  tripId          String?        @map("trip_id")
+  status          DOStatus       @default(DRAFT)
+  deliveryStatus  DeliveryStatus @default(PENDING) @map("delivery_status")
+  notes           String?
+  confirmedAt     DateTime?      @map("confirmed_at")
+  proofPhotoUrl   String?        @map("proof_photo_url")
+  proofGpsLat     Float?         @map("proof_gps_lat")
+  proofGpsLng     Float?         @map("proof_gps_lng")
+  deliveredAt     DateTime?      @map("delivered_at")
+  failureReason   FailureReason? @map("failure_reason")
+  failureNote     String?        @map("failure_note")
+  createdBy       String         @map("created_by")
+  deletedAt       DateTime?      @map("deleted_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  salesOrder    SalesOrder         @relation(fields: [salesOrderId], references: [id])
+  trip          Trip?              @relation(fields: [tripId], references: [id])
+  creator       User               @relation("DOCreatedBy", fields: [createdBy], references: [id])
+  lines         DeliveryOrderLine[]
+  invoices      ArInvoice[]
+  pickList      PickList?
+  handoverLines HandoverLine[]
+
+  @@index([salesOrderId])
+  @@index([tripId])
+  @@index([status])
+  @@index([deliveryStatus])
+  @@map("delivery_orders")
+}
+
+model DeliveryOrderLine {
+  id              String  @id @default(uuid())
+  deliveryOrderId String  @map("delivery_order_id")
+  productId       String  @map("product_id")
+  productName     String  @map("product_name")
+  productSku      String  @map("product_sku")
+  uom             String  @default("pcs")
+  qtyOrdered      Float   @map("qty_ordered")
+  qtyDelivered    Float   @map("qty_delivered")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@map("delivery_order_lines")
+}
+
+enum DOStatus {
+  DRAFT
+  CONFIRMED
+
+  @@map("do_status")
+}
+
+enum DeliveryStatus {
+  PENDING
+  PICKED_UP
+  ON_THE_WAY
+  DELIVERED
+  FAILED
+
+  @@map("delivery_status")
+}
+
+enum FailureReason {
+  CUSTOMER_ABSENT
+  WRONG_ADDRESS
+  CUSTOMER_REFUSED
+  OTHER
+
+  @@map("failure_reason")
+}
+
+// ─────────────────────────────────────────────
+// Delivery & Driver Management (Phase 2b)
+// ─────────────────────────────────────────────
+
+model Vehicle {
+  id          String        @id @default(uuid())
+  plateNumber String        @unique @map("plate_number")
+  vehicleType VehicleType   @map("vehicle_type")
+  capacity    Float?
+  status      VehicleStatus @default(AVAILABLE)
+  notes       String?
+  deletedAt   DateTime?     @map("deleted_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  trips Trip[]
+
+  @@map("vehicles")
+}
+
+enum VehicleType {
+  TRUCK
+  VAN
+  MOTORCYCLE
+
+  @@map("vehicle_type")
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+
+  @@map("vehicle_status")
+}
+
+model Trip {
+  id         String     @id @default(uuid())
+  tripNumber String     @unique @map("trip_number")
+  driverId   String     @map("driver_id")
+  vehicleId  String     @map("vehicle_id")
+  status     TripStatus @default(PLANNED)
+  tripDate   DateTime   @map("trip_date")
+  notes      String?
+  startedAt  DateTime?  @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdBy  String     @map("created_by")
+  deletedAt  DateTime?  @map("deleted_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  driver          User            @relation("DriverTrips", fields: [driverId], references: [id])
+  vehicle         Vehicle         @relation(fields: [vehicleId], references: [id])
+  creator         User            @relation("TripCreatedBy", fields: [createdBy], references: [id])
+  deliveryOrders  DeliveryOrder[]
+  handovers       Handover[]
+
+  @@index([driverId])
+  @@index([status])
+  @@index([tripDate])
+  @@map("trips")
+}
+
+enum TripStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+
+  @@map("trip_status")
+}
+
+model ArInvoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique @map("invoice_number")
+  doId          String        @map("do_id")
+  customerId    String        @map("customer_id")
+  status        InvoiceStatus @default(DRAFT)
+  subtotal      Float         @default(0)
+  ppnAmount     Float         @default(0) @map("ppn_amount")
+  grandTotal    Float         @default(0) @map("grand_total")
+  amountPaid    Float         @default(0) @map("amount_paid")
+  dueDate       DateTime      @map("due_date")
+  issuedAt      DateTime?     @map("issued_at")
+  notes         String?
+  createdBy     String        @map("created_by")
+  deletedAt     DateTime?     @map("deleted_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  deliveryOrder   DeliveryOrder   @relation(fields: [doId], references: [id])
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  payments        Payment[]
+  commissionLines CommissionLine[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("ar_invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+
+  @@map("invoice_status")
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  invoiceId   String        @map("invoice_id")
+  amount      Float
+  method      PaymentMethod
+  reference   String?
+  paymentDate DateTime      @map("payment_date")
+  notes       String?
+  createdBy   String        @map("created_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  invoice ArInvoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  GIRO
+  CHECK
+  OTHER
+
+  @@map("payment_method")
+}
+
+// ─────────────────────────────────────────────
+// Phase 6 — Commission & CRM
+// ─────────────────────────────────────────────
+
+enum CommissionType {
+  PERCENTAGE_SALES
+  PERCENTAGE_PROFIT
+  TIERED
+
+  @@map("commission_type")
+}
+
+enum CommissionStatus {
+  DRAFT
+  CONFIRMED
+
+  @@map("commission_status")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+
+  @@map("lead_status")
+}
+
+enum ActivityType {
+  CALL
+  VISIT
+  NOTE
+  EMAIL
+  MEETING
+
+  @@map("activity_type")
+}
+
+model CommissionRule {
+  id             String         @id @default(uuid())
+  salespersonId  String         @map("salesperson_id")
+  type           CommissionType
+  rate           Float?
+  tiers          Json?
+  effectiveDate  DateTime       @map("effective_date")
+  endDate        DateTime?      @map("end_date")
+  isActive       Boolean        @default(true) @map("is_active")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  salesperson User         @relation("CommissionRules", fields: [salespersonId], references: [id], onDelete: Cascade)
+  commissions Commission[]
+
+  @@index([salespersonId])
+  @@map("commission_rules")
+}
+
+model Commission {
+  id                String           @id @default(uuid())
+  salespersonId     String           @map("salesperson_id")
+  ruleId            String           @map("rule_id")
+  periodStart       DateTime         @map("period_start")
+  periodEnd         DateTime         @map("period_end")
+  totalSales        Float            @default(0) @map("total_sales")
+  totalProfit       Float            @default(0) @map("total_profit")
+  commissionAmount  Float            @default(0) @map("commission_amount")
+  status            CommissionStatus @default(DRAFT)
+  confirmedBy       String?          @map("confirmed_by")
+  confirmedAt       DateTime?        @map("confirmed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  salesperson User           @relation("Commissions", fields: [salespersonId], references: [id], onDelete: Cascade)
+  rule        CommissionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  lines       CommissionLine[]
+
+  @@index([salespersonId])
+  @@index([periodStart, periodEnd])
+  @@map("commissions")
+}
+
+model CommissionLine {
+  id               String   @id @default(uuid())
+  commissionId     String   @map("commission_id")
+  invoiceId        String   @map("invoice_id")
+  invoiceAmount    Float    @map("invoice_amount")
+  profitAmount     Float    @map("profit_amount")
+  commissionAmount Float    @map("commission_amount")
+
+  commission Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  invoice    ArInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@unique([commissionId, invoiceId])
+  @@index([commissionId])
+  @@map("commission_lines")
+}
+
+model Lead {
+  id          String     @id @default(uuid())
+  name        String
+  company     String?
+  phone       String?
+  email       String?
+  source      String?
+  status      LeadStatus  @default(NEW)
+  assignedTo  String?     @map("assigned_to")
+  customerId  String?     @map("customer_id")
+  notes       String?
+  value       Float?
+  deletedAt   DateTime?   @map("deleted_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  assignee   User?              @relation("LeadAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  customer   Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  activities CustomerActivity[]
+
+  @@index([assignedTo])
+  @@index([status])
+  @@index([customerId])
+  @@map("leads")
+}
+
+model CustomerActivity {
+  id         String       @id @default(uuid())
+  customerId String?      @map("customer_id")
+  leadId     String?      @map("lead_id")
+  userId     String       @map("user_id")
+  type       ActivityType
+  subject    String
+  notes      String?
+  activityAt DateTime     @default(now()) @map("activity_at")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user     User      @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([leadId])
+  @@index([userId])
+  @@map("customer_activities")
+}
+
+model SalesTarget {
+  id             String   @id @default(uuid())
+  salespersonId  String   @map("salesperson_id")
+  periodMonth    Int      @map("period_month")
+  periodYear     Int      @map("period_year")
+  targetAmount   Float    @map("target_amount")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  salesperson User @relation("SalesTargets", fields: [salespersonId], references: [id], onDelete: Cascade)
+
+  @@unique([salespersonId, periodMonth, periodYear])
+  @@index([salespersonId])
+  @@map("sales_targets")
+}
+
+// ─────────────────────────────────────────────
+// Chart of Accounts (Finance Foundation)
+// ─────────────────────────────────────────────
+
+model Account {
+  id        String      @id @default(uuid())
+  code      String      @unique
+  name      String
+  type      AccountType
+  parentId  String?     @map("parent_id")
+  isActive  Boolean     @default(true) @map("is_active")
+  deletedAt DateTime?   @map("deleted_at")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  parent   Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children Account[] @relation("AccountHierarchy")
+
+  expenseCategories ExpenseCategory[]
+  journalLines      JournalLine[]
+
+  @@map("accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  COGS
+  EXPENSE
+
+  @@map("account_type")
+}
+
+// ─────────────────────────────────────────────
+// Expenses (Categories for Phase 1 seed)
+// ─────────────────────────────────────────────
+
+model ExpenseCategory {
+  id           String    @id @default(uuid())
+  name         String
+  coaAccountId String?   @map("coa_account_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  coaAccount Account?  @relation(fields: [coaAccountId], references: [id])
+  expenses   Expense[]
+
+  @@map("expense_categories")
+}
+
+// ─────────────────────────────────────────────
+// HR & Employees
+// ─────────────────────────────────────────────
+
+model Employee {
+  id             String          @id @default(uuid())
+  userId         String?         @unique @map("user_id")
+  name           String
+  nik            String?         @unique
+  department     String?
+  position       String?
+  joinDate       DateTime?       @map("join_date")
+  basicSalary    Float           @default(0) @map("basic_salary")
+  allowances     Float           @default(0) @map("allowances")
+  deductions     Float           @default(0) @map("deductions")
+  employmentType EmploymentType  @default(PERMANENT) @map("employment_type")
+  phone          String?
+  email          String?
+  address        String?
+  bankAccount    String?         @map("bank_account")
+  bankName       String?         @map("bank_name")
+  status         EmployeeStatus  @default(ACTIVE)
+  deletedAt      DateTime?       @map("deleted_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  user         User?           @relation(fields: [userId], references: [id])
+  attendance   Attendance[]
+  leaveRequests LeaveRequest[]
+  payrollLines PayrollLine[]
+
+  @@map("employees")
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+
+  @@map("employment_type")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  RESIGNED
+
+  @@map("employee_status")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  HALF_DAY
+
+  @@map("attendance_status")
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  PERSONAL
+
+  @@map("leave_type")
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("leave_status")
+}
+
+enum PayrollStatus {
+  DRAFT
+  CONFIRMED
+  PAID
+
+  @@map("payroll_status")
+}
+
+model Attendance {
+  id         String           @id @default(uuid())
+  employeeId String          @map("employee_id")
+  date       DateTime        @db.Date
+  clockIn    DateTime?       @map("clock_in")
+  clockOut   DateTime?       @map("clock_out")
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@map("attendance")
+}
+
+model LeaveRequest {
+  id              String      @id @default(uuid())
+  employeeId      String      @map("employee_id")
+  leaveType       LeaveType   @map("leave_type")
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime    @map("end_date") @db.Date
+  days            Int
+  reason          String?
+  status          LeaveStatus @default(PENDING)
+  approvedBy      String?     @map("approved_by")
+  approvedAt      DateTime?   @map("approved_at")
+  rejectionReason String?     @map("rejection_reason")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approver  User?   @relation("LeaveApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leave_requests")
+}
+
+model PayrollRun {
+  id              String        @id @default(uuid())
+  periodMonth     Int           @map("period_month")
+  periodYear      Int           @map("period_year")
+  status          PayrollStatus @default(DRAFT)
+  totalAmount     Float         @default(0) @map("total_amount")
+  journalEntryId  String?       @map("journal_entry_id")
+  createdBy       String        @map("created_by")
+  processedAt     DateTime?    @map("processed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  creator User          @relation("PayrollCreatedBy", fields: [createdBy], references: [id])
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  lines        PayrollLine[]
+
+  @@unique([periodMonth, periodYear])
+  @@index([status])
+  @@map("payroll_runs")
+}
+
+model PayrollLine {
+  id                   String   @id @default(uuid())
+  payrollRunId         String   @map("payroll_run_id")
+  employeeId           String   @map("employee_id")
+  basicSalary         Float    @default(0) @map("basic_salary")
+  allowances          Float    @default(0) @map("allowances")
+  deductions          Float    @default(0) @map("deductions")
+  bpjsKesehatan       Float    @default(0) @map("bpjs_kesehatan")
+  bpjsKetenagakerjaan Float    @default(0) @map("bpjs_ketenagakerjaan")
+  pph21               Float    @default(0) @map("pph21")
+  absentDeduction     Float    @default(0) @map("absent_deduction")
+  netPay              Float    @default(0) @map("net_pay")
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([payrollRunId])
+  @@index([employeeId])
+  @@map("payroll_lines")
+}
+
+// ─────────────────────────────────────────────
+// Audit Trail (Immutable)
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id          String       @id @default(uuid())
+  timestamp   DateTime     @default(now())
+  userId      String       @map("user_id")
+  userRole    String       @map("user_role")
+  ipAddress   String?      @map("ip_address")
+  action      AuditAction
+  entityType  String       @map("entity_type")
+  entityId    String       @map("entity_id")
+  entityLabel String?      @map("entity_label")
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id])
+  changes AuditLogChange[]
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model AuditLogChange {
+  id         String  @id @default(uuid())
+  auditLogId String  @map("audit_log_id")
+  fieldName  String  @map("field_name")
+  oldValue   String? @map("old_value")
+  newValue   String? @map("new_value")
+
+  auditLog AuditLog @relation(fields: [auditLogId], references: [id])
+
+  @@map("audit_log_changes")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  EXPORT
+
+  @@map("audit_action")
+}
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  title      String
+  message    String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id               String  @id @default(uuid())
+  userId           String  @map("user_id")
+  notificationType String  @map("notification_type")
+  enabled          Boolean @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, notificationType])
+  @@map("notification_preferences")
+}
+
+// ─────────────────────────────────────────────
+// Data Import
+// ─────────────────────────────────────────────
+
+model ImportLog {
+  id          String   @id @default(uuid())
+  importType  String   @map("import_type")
+  fileName    String   @map("file_name")
+  totalRows   Int      @default(0) @map("total_rows")
+  successRows Int      @default(0) @map("success_rows")
+  errorRows   Int      @default(0) @map("error_rows")
+  errors      Json?
+  importedBy  String   @map("imported_by")
+  importedAt  DateTime @default(now()) @map("imported_at")
+
+  user User @relation(fields: [importedBy], references: [id])
+
+  @@map("import_logs")
+}
+
+// ─────────────────────────────────────────────
+// System Settings
+// ─────────────────────────────────────────────
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  label     String?
+  group     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+// ─────────────────────────────────────────────
+// Recent Searches (per user, max 5)
+// ─────────────────────────────────────────────
+
+model RecentSearch {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  query     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("recent_searches")
+}
+
+// ─────────────────────────────────────────────
+// Inventory & Warehouse Ops (Phase 3)
+// ─────────────────────────────────────────────
+
+enum GoodsReceiptStatus {
+  DRAFT
+  VERIFIED
+  CONFIRMED
+
+  @@map("goods_receipt_status")
+}
+
+enum PickListStatus {
+  CREATED
+  PICKING
+  PACKED
+  READY_FOR_HANDOVER
+
+  @@map("pick_list_status")
+}
+
+enum StockOpnameStatus {
+  DRAFT
+  IN_PROGRESS
+  CONFIRMED
+
+  @@map("stock_opname_status")
+}
+
+enum HandoverStatus {
+  PENDING
+  CONFIRMED
+
+  @@map("handover_status")
+}
+
+enum GoodsReceiptLineCondition {
+  GOOD
+  DAMAGED
+  SHORT
+
+  @@map("goods_receipt_line_condition")
+}
+
+model GoodsReceipt {
+  id            String              @id @default(uuid())
+  receiptNumber String              @unique @map("receipt_number")
+  supplierName  String              @map("supplier_name")
+  warehouseId   String              @map("warehouse_id")
+  receiptDate   DateTime            @map("receipt_date")
+  status        GoodsReceiptStatus  @default(DRAFT)
+  notes         String?
+  verifiedBy    String?             @map("verified_by")
+  verifiedAt    DateTime?           @map("verified_at")
+  confirmedBy   String?             @map("confirmed_by")
+  confirmedAt   DateTime?           @map("confirmed_at")
+  createdBy     String              @map("created_by")
+  deletedAt     DateTime?           @map("deleted_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  warehouse  Warehouse          @relation(fields: [warehouseId], references: [id])
+  creator    User               @relation("GRCreatedBy", fields: [createdBy], references: [id])
+  verifier   User?              @relation("GRVerifiedBy", fields: [verifiedBy], references: [id])
+  confirmer  User?              @relation("GRConfirmedBy", fields: [confirmedBy], references: [id])
+  lines      GoodsReceiptLine[]
+
+  @@index([status])
+  @@index([receiptDate])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id              String                    @id @default(uuid())
+  goodsReceiptId  String                    @map("goods_receipt_id")
+  productId       String                    @map("product_id")
+  expectedQty     Float                     @map("expected_qty")
+  receivedQty     Float                     @default(0) @map("received_qty")
+  condition       GoodsReceiptLineCondition @default(GOOD)
+  notes           String?
+  newCost         Float?                    @map("new_cost")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id])
+
+  @@map("goods_receipt_lines")
+}
+
+model PickList {
+  id               String         @id @default(uuid())
+  pickListNumber   String         @unique @map("pick_list_number")
+  deliveryOrderId  String         @unique @map("delivery_order_id")
+  status           PickListStatus @default(CREATED)
+  assignedTo       String?        @map("assigned_to")
+  pickedAt         DateTime?      @map("picked_at")
+  packedAt         DateTime?      @map("packed_at")
+  createdBy        String         @map("created_by")
+  deletedAt        DateTime?      @map("deleted_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  creator       User          @relation("PLCreatedBy", fields: [createdBy], references: [id])
+  assignee      User?         @relation("PLAssignedTo", fields: [assignedTo], references: [id])
+  lines         PickListLine[]
+
+  @@index([status])
+  @@index([assignedTo])
+  @@map("pick_lists")
+}
+
+model PickListLine {
+  id                  String  @id @default(uuid())
+  pickListId          String  @map("pick_list_id")
+  productId           String  @map("product_id")
+  productName         String  @map("product_name")
+  productSku          String  @map("product_sku")
+  warehouseLocationId String? @map("warehouse_location_id")
+  qtyRequired         Float   @map("qty_required")
+  qtyPicked           Float   @default(0) @map("qty_picked")
+  isShortPicked       Boolean @default(false) @map("is_short_picked")
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  pickList          PickList           @relation(fields: [pickListId], references: [id], onDelete: Cascade)
+  product           Product            @relation(fields: [productId], references: [id])
+  warehouseLocation WarehouseLocation? @relation(fields: [warehouseLocationId], references: [id])
+
+  @@map("pick_list_lines")
+}
+
+model StockOpname {
+  id           String            @id @default(uuid())
+  opnameNumber String            @unique @map("opname_number")
+  warehouseId  String            @map("warehouse_id")
+  status       StockOpnameStatus @default(DRAFT)
+  notes        String?
+  countedBy    String?           @map("counted_by")
+  confirmedBy  String?           @map("confirmed_by")
+  confirmedAt  DateTime?         @map("confirmed_at")
+  createdBy    String            @map("created_by")
+  deletedAt    DateTime?         @map("deleted_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  warehouse  Warehouse         @relation(fields: [warehouseId], references: [id])
+  creator    User              @relation("SOPCreatedBy", fields: [createdBy], references: [id])
+  counter    User?             @relation("SOPCountedBy", fields: [countedBy], references: [id])
+  confirmer  User?             @relation("SOPConfirmedBy", fields: [confirmedBy], references: [id])
+  lines      StockOpnameLine[]
+
+  @@index([status])
+  @@index([warehouseId])
+  @@map("stock_opnames")
+}
+
+model StockOpnameLine {
+  id            String  @id @default(uuid())
+  stockOpnameId String  @map("stock_opname_id")
+  productId     String  @map("product_id")
+  systemQty     Float   @map("system_qty")
+  countedQty    Float?  @map("counted_qty")
+  variance      Float?
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  stockOpname StockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("stock_opname_lines")
+}
+
+model Handover {
+  id               String         @id @default(uuid())
+  tripId           String         @map("trip_id")
+  warehouseStaffId String         @map("warehouse_staff_id")
+  driverId         String         @map("driver_id")
+  status           HandoverStatus @default(PENDING)
+  notes            String?
+  confirmedAt      DateTime?      @map("confirmed_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  trip           Trip           @relation(fields: [tripId], references: [id])
+  warehouseStaff User           @relation("HandoverWhStaff", fields: [warehouseStaffId], references: [id])
+  driver         User           @relation("HandoverDriver", fields: [driverId], references: [id])
+  lines          HandoverLine[]
+
+  @@index([tripId])
+  @@index([status])
+  @@map("handovers")
+}
+
+model HandoverLine {
+  id              String  @id @default(uuid())
+  handoverId      String  @map("handover_id")
+  deliveryOrderId String  @map("delivery_order_id")
+  confirmed       Boolean @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  handover      Handover      @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+
+  @@map("handover_lines")
+}
+
+// ─────────────────────────────────────────────
+// Finance & Accounting (Phase 4)
+// ─────────────────────────────────────────────
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+
+  @@map("journal_status")
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+
+  @@map("expense_status")
+}
+
+enum FiscalPeriodStatus {
+  OPEN
+  CLOSED
+
+  @@map("fiscal_period_status")
+}
+
+model JournalEntry {
+  id            String        @id @default(uuid())
+  entryNumber   String        @unique @map("entry_number")
+  entryDate     DateTime      @map("entry_date")
+  description   String
+  referenceType String?       @map("reference_type")
+  referenceId   String?       @map("reference_id")
+  status        JournalStatus @default(DRAFT)
+  totalDebit    Float         @default(0) @map("total_debit")
+  totalCredit   Float         @default(0) @map("total_credit")
+  postedBy      String?       @map("posted_by")
+  postedAt      DateTime?     @map("posted_at")
+  createdBy     String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  creator  User          @relation("JECreatedBy", fields: [createdBy], references: [id])
+  poster   User?         @relation("JEPostedBy", fields: [postedBy], references: [id])
+  lines    JournalLine[]
+  expenses Expense[]
+  payrollRuns PayrollRun[]
+
+  @@index([entryDate])
+  @@index([status])
+  @@index([referenceType, referenceId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             String  @id @default(uuid())
+  journalEntryId String  @map("journal_entry_id")
+  accountId      String  @map("account_id")
+  debit          Float   @default(0)
+  credit         Float   @default(0)
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+model Expense {
+  id              String        @id @default(uuid())
+  expenseNumber   String        @unique @map("expense_number")
+  categoryId      String        @map("category_id")
+  amount          Float
+  description     String?
+  expenseDate     DateTime      @map("expense_date")
+  paymentMethod   PaymentMethod @default(CASH) @map("payment_method")
+  referenceNo     String?       @map("reference_no")
+  status          ExpenseStatus @default(DRAFT)
+  submittedBy     String        @map("submitted_by")
+  approvedBy      String?       @map("approved_by")
+  approvedAt      DateTime?     @map("approved_at")
+  rejectionReason String?       @map("rejection_reason")
+  journalEntryId  String?       @map("journal_entry_id")
+  deletedAt       DateTime?     @map("deleted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  submitter    User            @relation("ExpenseSubmittedBy", fields: [submittedBy], references: [id])
+  approver     User?           @relation("ExpenseApprovedBy", fields: [approvedBy], references: [id])
+  journalEntry JournalEntry?   @relation(fields: [journalEntryId], references: [id])
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([submittedBy])
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model FiscalPeriod {
+  id       String             @id @default(uuid())
+  year     Int
+  month    Int
+  status   FiscalPeriodStatus @default(OPEN)
+  closedBy String?            @map("closed_by")
+  closedAt DateTime?          @map("closed_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  closer User? @relation("FPClosedBy", fields: [closedBy], references: [id])
+
+  @@unique([year, month])
+  @@map("fiscal_periods")
+}
+
