@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { AuditService } from "./audit.service";
+import { DeliveryOrderService } from "./delivery-order.service";
 
 export const updateDeliveryStatusSchema = z.object({
   deliveryStatus: z.enum(["PICKED_UP", "ON_THE_WAY", "DELIVERED", "FAILED"]),
@@ -152,6 +153,10 @@ export class DriverService {
       data: updateData,
     });
 
+    if (parsed.deliveryStatus === "DELIVERED") {
+      await DeliveryOrderService.updateSODeliveryStatus(updated.salesOrderId);
+    }
+
     await AuditService.logUpdate({
       userId: driverId,
       userRole,
@@ -226,6 +231,8 @@ export class DriverService {
       oldData: { deliveryStatus: "ON_THE_WAY", proofPhotoUrl: null },
       newData: { deliveryStatus: "DELIVERED", proofPhotoUrl: proofUrl },
     });
+
+    await DeliveryOrderService.updateSODeliveryStatus(updated.salesOrderId);
 
     return updated;
   }

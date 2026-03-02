@@ -191,7 +191,8 @@ export class DeliveryOrderService {
 
   /**
    * Recalculates and updates the parent SO delivery status based on
-   * total quantities delivered across all confirmed DOs.
+   * total quantities delivered across all DOs that have actually been
+   * delivered to the customer (deliveryStatus = DELIVERED).
    */
   static async updateSODeliveryStatus(salesOrderId: string): Promise<void> {
     const so = await prisma.salesOrder.findUnique({
@@ -199,7 +200,7 @@ export class DeliveryOrderService {
       include: {
         lines: true,
         deliveryOrders: {
-          where: { status: "CONFIRMED", deletedAt: null },
+          where: { status: "CONFIRMED", deliveryStatus: "DELIVERED", deletedAt: null },
           include: { lines: true },
         },
       },
