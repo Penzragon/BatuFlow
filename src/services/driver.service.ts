@@ -284,8 +284,8 @@ export class DriverService {
 
     const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
-      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="Arial" font-size="${fontSize1}" fill="white">${watermarkLine1}</text>
-      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="Arial" font-size="${fontSize2}" fill="#FFD700">${watermarkLine2}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="white">${watermarkLine1}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${watermarkLine2}</text>
     </svg>`;
 
     const processedBuffer = await sharp(resizedBuffer)
