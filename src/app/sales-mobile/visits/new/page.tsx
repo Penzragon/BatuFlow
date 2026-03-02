@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import SalesVisitCheckInForm from "./sales-visit-checkin-form";
@@ -7,6 +8,7 @@ export default async function SalesVisitCheckInPage({
 }: {
   searchParams: Promise<{ customerId?: string }>;
 }) {
+  const t = await getTranslations("salesMobile.visits");
   const session = await auth();
   const userId = session?.user?.id;
   const role = session?.user?.role;
@@ -15,8 +17,8 @@ export default async function SalesVisitCheckInPage({
   if (!userId || !role) {
     return (
       <div className="space-y-4 p-4">
-        <h1 className="text-lg font-semibold">Visit Check-in</h1>
-        <p className="text-sm text-red-600">Unauthorized</p>
+        <h1 className="text-lg font-semibold">{t("title")}</h1>
+        <p className="text-sm text-red-600">{t("unauthorized")}</p>
       </div>
     );
   }

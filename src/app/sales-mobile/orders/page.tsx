@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -13,6 +14,8 @@ const statusClass: Record<string, string> = {
 };
 
 export default async function SalesOrdersPage() {
+  const t = await getTranslations("salesMobile.orders");
+  const locale = await getLocale();
   const session = await auth();
   const userId = session?.user?.id;
   const role = session?.user?.role;
@@ -20,8 +23,8 @@ export default async function SalesOrdersPage() {
   if (!userId || !role) {
     return (
       <div className="space-y-4 p-4">
-        <h1 className="text-lg font-semibold">My Orders</h1>
-        <p className="text-sm text-red-600">Unauthorized</p>
+        <h1 className="text-lg font-semibold">{t("title")}</h1>
+        <p className="text-sm text-red-600">{t("unauthorized")}</p>
       </div>
     );
   }
@@ -48,40 +51,42 @@ export default async function SalesOrdersPage() {
     take: 50,
   });
 
+  const currency = "IDR";
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">My Orders</h1>
-          <p className="text-xs text-muted-foreground">Recent orders: {orders.length}</p>
+          <h1 className="text-lg font-semibold">{t("title")}</h1>
+          <p className="text-xs text-muted-foreground">{t("recentCount", { count: orders.length })}</p>
         </div>
         <Link href="/sales-mobile/orders/new" className="rounded-md border px-3 py-1 text-sm hover:bg-accent">
-          New
+          {t("newButton")}
         </Link>
       </div>
 
       <div className="space-y-2">
         {orders.length === 0 ? (
           <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-            No orders yet.
+            {t("emptyState")}
           </div>
         ) : (
           orders.map((o) => (
-            <Link key={o.id} href={`/sales/orders/${o.id}`} className="block rounded-lg border p-3 hover:bg-accent">
+            <Link key={o.id} href={`/sales-mobile/orders/${o.id}`} className="block rounded-lg border p-3 hover:bg-accent">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">{o.soNumber}</p>
                   <p className="text-xs text-muted-foreground">{o.customer.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {new Date(o.createdAt).toLocaleString("id-ID")}
+                    {new Date(o.createdAt).toLocaleString(locale)}
                   </p>
                 </div>
                 <div className="text-right">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClass[o.status] ?? "bg-slate-100 text-slate-700"}`}>
-                    {o.status.replaceAll("_", " ")}
+                    {t(`status.${o.status}`)}
                   </span>
                   <p className="mt-2 text-xs font-medium">
-                    Rp {o.grandTotal.toLocaleString("id-ID")}
+                    {new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: locale === "id" ? 0 : 2 }).format(Number(o.grandTotal))}
                   </p>
                 </div>
               </div>

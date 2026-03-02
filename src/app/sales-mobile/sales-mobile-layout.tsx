@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
+import { useTranslations } from "next-intl";
 import { LayoutDashboard, Users, ClipboardCheck, ShoppingCart, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,28 +14,29 @@ interface SalesMobileLayoutProps {
 }
 
 const navPaths = [
-  { href: "/sales-mobile/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/sales-mobile/customers", label: "Customers", icon: Users },
-  { href: "/sales-mobile/visits/new", label: "Check-in", icon: ClipboardCheck },
-  { href: "/sales-mobile/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/sales-mobile/dashboard", key: "home", icon: LayoutDashboard },
+  { href: "/sales-mobile/customers", key: "customers", icon: Users },
+  { href: "/sales-mobile/visits/new", key: "checkIn", icon: ClipboardCheck },
+  { href: "/sales-mobile/orders", key: "orders", icon: ShoppingCart },
 ] as const;
 
 export default function SalesMobileLayout({ children, session }: SalesMobileLayoutProps) {
   const pathname = usePathname();
+  const t = useTranslations("salesMobile");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b bg-background px-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-primary">BatuFlow</span>
-          <span className="text-xs text-muted-foreground">Sales App</span>
+          <span className="text-xs text-muted-foreground">{t("appLabel")}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="max-w-[110px] truncate text-xs text-muted-foreground">{session.user?.name}</span>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="rounded p-1 text-muted-foreground hover:text-foreground"
-            aria-label="Logout"
+            aria-label={t("logout")}
           >
             <LogOut size={16} />
           </button>
@@ -57,7 +59,7 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
               )}
             >
               <Icon size={20} />
-              <span>{item.label}</span>
+              <span>{t(`nav.${item.key}`)}</span>
             </Link>
           );
         })}
