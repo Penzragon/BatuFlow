@@ -239,7 +239,7 @@ export class DriverService {
 
   /**
    * Compresses and watermarks the proof photo with DO number, customer name,
-   * and timestamp. Returns the relative URL path.
+   * and timestamp. Returns a compressed data URL (suitable for Vercel).
    */
   static async processProofPhoto(
     buffer: Buffer,
@@ -262,9 +262,15 @@ export class DriverService {
     </svg>`;
 
     const processedBuffer = await sharp(buffer)
-      .resize(800, 600, { fit: "inside", withoutEnlargement: true })
+      // Downscale to keep images lightweight while readable as proof
+      .resize(640, 480, { fit: "inside", withoutEnlargement: true })
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
-      .jpeg({ quality: 80 })
+      .jpeg({
+        quality: 70,
+        mozjpeg: true,
+        chromaSubsampling: "4:2:0",
+        progressive: true,
+      })
       .toBuffer();
 
     // Store as data URL in the database so we don't need a writable filesystem (Vercel friendly).
