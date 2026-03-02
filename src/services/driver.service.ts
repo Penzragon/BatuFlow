@@ -260,7 +260,9 @@ export class DriverService {
 
     const metadata = await baseImage.metadata();
     const imgWidth = Math.max(1, metadata.width ?? 640);
-    const watermarkHeight = Math.max(56, Math.round(imgWidth * 0.1));
+    const imgHeight = Math.max(1, metadata.height ?? 480);
+    const desiredWatermarkHeight = Math.max(32, Math.round(imgWidth * 0.1));
+    const watermarkHeight = Math.min(desiredWatermarkHeight, imgHeight);
 
     const escapeXml = (value: string) =>
       value
