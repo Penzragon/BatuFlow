@@ -247,16 +247,6 @@ export class DriverService {
     customerName: string
   ): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { writeFile, mkdir } = await import("fs/promises");
-    const path = await import("path");
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "delivery-proof");
-    await mkdir(uploadDir, { recursive: true });
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `proof-${doNumber}-${timestamp}.jpg`;
-    const filepath = path.join(uploadDir, filename);
-
     const now = new Date();
     const dateStr = now.toLocaleDateString("id-ID", {
       day: "2-digit", month: "short", year: "numeric",
@@ -271,13 +261,15 @@ export class DriverService {
       <text x="10" y="62" font-family="Arial" font-size="20" fill="#FFD700">${watermarkLine2}</text>
     </svg>`;
 
-    await sharp(buffer)
+    const processedBuffer = await sharp(buffer)
       .resize(800, 600, { fit: "inside", withoutEnlargement: true })
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({ quality: 80 })
-      .toFile(filepath);
+      .toBuffer();
 
-    return `/uploads/delivery-proof/${filename}`;
+    // Store as data URL in the database so we don't need a writable filesystem (Vercel friendly).
+    const base64 = processedBuffer.toString("base64");
+    return `data:image/jpeg;base64,${base64}`;
   }
 
   /**
