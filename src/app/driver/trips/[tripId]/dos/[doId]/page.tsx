@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -48,12 +48,9 @@ export default function DODeliveryActionPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Camera / proof photo state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   // GPS state
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
@@ -86,14 +83,6 @@ export default function DODeliveryActionPage() {
 
   useEffect(() => { fetchDO(); }, [fetchDO]);
 
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, []);
-
   const captureGPS = () => {
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -110,43 +99,29 @@ export default function DODeliveryActionPage() {
     );
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setCameraActive(true);
-    } catch {
-      toast.error("Camera access denied. Please allow camera access.");
-    }
+  const startCamera = () => {
+    fileInputRef.current?.click();
   };
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) {
-        setPhotoBlob(blob);
-        setCapturedPhoto(canvas.toDataURL("image/jpeg"));
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        setCameraActive(false);
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPhotoBlob(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        setCapturedPhoto(reader.result);
       }
-    }, "image/jpeg", 0.85);
+    };
+    reader.readAsDataURL(file);
   };
 
   const retakePhoto = () => {
     setCapturedPhoto(null);
     setPhotoBlob(null);
-    startCamera();
+    fileInputRef.current?.click();
   };
 
   const handleUpdateStatus = async (newStatus: "PICKED_UP" | "ON_THE_WAY") => {
@@ -341,7 +316,15 @@ export default function DODeliveryActionPage() {
           {/* Camera / Photo */}
           <div className="rounded-xl border bg-card p-4 shadow-sm">
             <p className="mb-3 text-sm font-semibold">Proof Photo <span className="text-red-500">*</span></p>
-            {!cameraActive && !capturedPhoto && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {!capturedPhoto && (
               <button
                 onClick={startCamera}
                 className="flex min-h-[120px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
@@ -349,18 +332,6 @@ export default function DODeliveryActionPage() {
                 <Camera size={32} />
                 <span className="text-sm">Tap to open camera</span>
               </button>
-            )}
-            {cameraActive && (
-              <div className="space-y-2">
-                <video ref={videoRef} className="w-full rounded-lg" autoPlay playsInline muted />
-                <button
-                  onClick={capturePhoto}
-                  className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold"
-                >
-                  <Camera size={18} />
-                  Capture Photo
-                </button>
-              </div>
             )}
             {capturedPhoto && (
               <div className="space-y-2">
@@ -375,7 +346,6 @@ export default function DODeliveryActionPage() {
                 </button>
               </div>
             )}
-            <canvas ref={canvasRef} className="hidden" />
           </div>
 
           {/* Action buttons */}
