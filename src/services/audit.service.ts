@@ -130,21 +130,23 @@ export class AuditService {
     changes: AuditChange[];
     metadata?: unknown;
   }): Promise<void> {
-    try {
-      const queue = getAuditQueue();
-      const isReady = await queue.client
-        .then((c) => c.status === "ready")
-        .catch(() => false);
+    if (process.env.REDIS_URL) {
+      try {
+        const queue = getAuditQueue();
+        const isReady = await queue.client
+          .then((c) => c.status === "ready")
+          .catch(() => false);
 
-      if (isReady) {
-        await queue.add("audit", payload);
-        return;
+        if (isReady) {
+          await queue.add("audit", payload);
+          return;
+        }
+      } catch {
+        // Redis unreachable — fall through to direct write
       }
-    } catch {
-      // Redis unreachable — fall through to direct write
     }
 
-    // Fallback: write directly to database
+    // No Redis or fallback: write directly to database
     try {
       await AuditService.writeToDb(payload);
     } catch (err) {

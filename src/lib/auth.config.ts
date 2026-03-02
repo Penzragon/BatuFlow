@@ -7,6 +7,7 @@ import Credentials from "next-auth/providers/credentials";
  * so it can be used in the Edge Runtime middleware.
  */
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
@@ -25,6 +26,11 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth: session }) {
       return !!session?.user;
+    },
+    redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
     async jwt({ token, user }) {
       if (user) {

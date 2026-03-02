@@ -128,6 +128,34 @@ APIs live under `/api/*`; auth is session-based (NextAuth credentials). PWA mani
 
 ---
 
+## Deploy to production (Neon + Vercel)
+
+After creating a Neon database and setting `DATABASE_URL` and `AUTH_SECRET` in Vercel:
+
+1. **Push schema to Neon** (run once, use your Neon connection string from the Neon dashboard):
+
+   ```bash
+   DATABASE_URL="postgresql://user:pass@host.neon.tech/neondb?sslmode=require" npx prisma db push
+   ```
+
+2. **Seed demo data** (optional):
+
+   ```bash
+   DATABASE_URL="postgresql://user:pass@host.neon.tech/neondb?sslmode=require" npm run db:seed
+   ```
+
+   Login with `admin@batuflow.com` / `password123` (and other seeded users; change passwords in production).
+
+3. **Set in Vercel** (Project → Settings → Environment Variables):
+
+   - `AUTH_URL` = your app URL (e.g. `https://batuflow.vercel.app`)
+   - `NEXT_PUBLIC_APP_URL` = same as `AUTH_URL`
+   - `NEXT_PUBLIC_APP_NAME` = `BatuFlow` (optional)
+
+4. **Redeploy** so new env vars apply: Deployments → … → Redeploy, or push a commit to `main`.
+
+---
+
 ## Version
 
 **v1.0.0** — Initial release.
