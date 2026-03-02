@@ -252,18 +252,37 @@ export class DriverService {
       day: "2-digit", month: "short", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
-    const watermarkLine1 = `${doNumber} | ${customerName}`;
-    const watermarkLine2 = dateStr;
 
-    const svgText = `<svg width="800" height="80">
+    const baseImage = sharp(buffer).resize(640, 480, {
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+
+    const metadata = await baseImage.metadata();
+    const imgWidth = Math.max(1, metadata.width ?? 640);
+    const watermarkHeight = Math.max(56, Math.round(imgWidth * 0.1));
+
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const watermarkLine1 = escapeXml(`${doNumber} | ${customerName}`);
+    const watermarkLine2 = escapeXml(dateStr);
+
+    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
+    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
+
+    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
-      <text x="10" y="30" font-family="Arial" font-size="22" fill="white">${watermarkLine1}</text>
-      <text x="10" y="62" font-family="Arial" font-size="20" fill="#FFD700">${watermarkLine2}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="Arial" font-size="${fontSize1}" fill="white">${watermarkLine1}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="Arial" font-size="${fontSize2}" fill="#FFD700">${watermarkLine2}</text>
     </svg>`;
 
-    const processedBuffer = await sharp(buffer)
-      // Downscale to keep images lightweight while readable as proof
-      .resize(640, 480, { fit: "inside", withoutEnlargement: true })
+    const processedBuffer = await baseImage
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({
         quality: 70,
