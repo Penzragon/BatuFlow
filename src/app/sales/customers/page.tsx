@@ -1,21 +1,64 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-const dummyCustomers = [
-  { id: "cust-1", name: "Toko Maju Jaya", address: "Sukabumi" },
-  { id: "cust-2", name: "UD Sumber Rejeki", address: "Cianjur" },
-];
+export default async function SalesCustomersPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const role = session?.user?.role;
 
-export default function SalesCustomersPage() {
+  if (!userId || !role) {
+    return (
+      <div className="space-y-4 p-4">
+        <h1 className="text-lg font-semibold">Customers</h1>
+        <p className="text-sm text-red-600">Unauthorized</p>
+      </div>
+    );
+  }
+
+  const where = role === "ADMIN" || role === "MANAGER"
+    ? { deletedAt: null as Date | null, isActive: true }
+    : { deletedAt: null as Date | null, isActive: true, salespersonId: userId };
+
+  const customers = await prisma.customer.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      address: true,
+      phone: true,
+      paymentTermsDays: true,
+      updatedAt: true,
+    },
+    orderBy: [{ name: "asc" }],
+    take: 100,
+  });
+
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-lg font-semibold">Customers</h1>
+      <div>
+        <h1 className="text-lg font-semibold">Customers</h1>
+        <p className="text-xs text-muted-foreground">Assigned customers: {customers.length}</p>
+      </div>
+
       <div className="space-y-2">
-        {dummyCustomers.map((c) => (
-          <Link key={c.id} href={`/sales/customers/${c.id}`} className="block rounded-lg border p-3 hover:bg-accent">
-            <p className="font-medium">{c.name}</p>
-            <p className="text-xs text-muted-foreground">{c.address}</p>
-          </Link>
-        ))}
+        {customers.length === 0 ? (
+          <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+            No assigned customers yet.
+          </div>
+        ) : (
+          customers.map((c) => (
+            <Link key={c.id} href={`/sales/customers/${c.id}`} className="block rounded-lg border p-3 hover:bg-accent">
+              <p className="font-medium">{c.name}</p>
+              <p className="text-xs text-muted-foreground">{c.address || "-"}</p>
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{c.phone || "No phone"}</span>
+                <span>•</span>
+                <span>TOP {c.paymentTermsDays} days</span>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
