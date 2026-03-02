@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
-import { useTranslations } from "next-intl";
-import { LayoutDashboard, Users, ClipboardCheck, ShoppingCart, LogOut } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { LayoutDashboard, Users, ClipboardCheck, ShoppingCart, LogOut, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { locales, type Locale } from "@/i18n/config";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface SalesMobileLayoutProps {
   children: React.ReactNode;
@@ -22,7 +30,15 @@ const navPaths = [
 
 export default function SalesMobileLayout({ children, session }: SalesMobileLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const currentLocale = useLocale();
   const t = useTranslations("salesMobile");
+
+  function handleLocaleChange(locale: Locale) {
+    document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
+    router.refresh();
+    window.location.reload();
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -32,6 +48,25 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
           <span className="text-xs text-muted-foreground">{t("appLabel")}</span>
         </div>
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("changeLanguage")}>
+                <Languages size={18} className="text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {locales.map((locale) => (
+                <DropdownMenuItem
+                  key={locale}
+                  onClick={() => handleLocaleChange(locale)}
+                  className={currentLocale === locale ? "bg-accent" : undefined}
+                >
+                  {locale === "en" ? "English" : "Bahasa Indonesia"}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <span className="max-w-[110px] truncate text-xs text-muted-foreground">{session.user?.name}</span>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
