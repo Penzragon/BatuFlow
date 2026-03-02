@@ -253,12 +253,16 @@ export class DriverService {
       hour: "2-digit", minute: "2-digit",
     });
 
-    const baseImage = sharp(buffer).resize(640, 480, {
-      fit: "inside",
-      withoutEnlargement: true,
-    });
+    // IMPORTANT: use dimensions from the resized output image.
+    // Using source metadata can make overlay larger than the composited image.
+    const resizedBuffer = await sharp(buffer)
+      .resize(640, 480, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer();
 
-    const metadata = await baseImage.metadata();
+    const metadata = await sharp(resizedBuffer).metadata();
     const imgWidth = Math.max(1, metadata.width ?? 640);
     const imgHeight = Math.max(1, metadata.height ?? 480);
     const desiredWatermarkHeight = Math.max(32, Math.round(imgWidth * 0.1));
@@ -284,7 +288,7 @@ export class DriverService {
       <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="Arial" font-size="${fontSize2}" fill="#FFD700">${watermarkLine2}</text>
     </svg>`;
 
-    const processedBuffer = await baseImage
+    const processedBuffer = await sharp(resizedBuffer)
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({
         quality: 70,
