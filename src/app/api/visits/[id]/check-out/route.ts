@@ -54,7 +54,12 @@ export const POST = apiHandler(async (req, context) => {
 
     const arrayBuffer = await photoFile.arrayBuffer();
     const photoBuffer = Buffer.from(arrayBuffer);
-    checkoutPhotoPath = await VisitService.processCheckoutPhoto(photoBuffer, user.id, id);
+    try {
+      checkoutPhotoPath = await VisitService.processCheckoutPhoto(photoBuffer, user.id, id);
+    } catch (err) {
+      console.warn("[Visits][Checkout] Failed to persist checkout photo, continuing without file:", err instanceof Error ? err.message : err);
+      checkoutPhotoPath = undefined;
+    }
   }
 
   let checkoutAt: Date | undefined;

@@ -71,7 +71,12 @@ export class VisitService {
 
     let selfieUrl: string | null = null;
     if (selfieBuffer) {
-      selfieUrl = await VisitService.processSelfie(selfieBuffer, customer.name);
+      try {
+        selfieUrl = await VisitService.processSelfie(selfieBuffer, customer.name);
+      } catch (err) {
+        console.warn("[VisitService] Failed to persist check-in selfie, continuing without file:", err instanceof Error ? err.message : err);
+        selfieUrl = null;
+      }
     }
 
     let distanceFromCustomer: number | null = null;
