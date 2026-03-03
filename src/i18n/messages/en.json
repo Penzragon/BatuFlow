@@ -1298,6 +1298,11 @@
         "gpsRequired": "GPS is required",
         "photoRequired": "Photo is required",
         "failedCheckIn": "Check-in failed"
+      },
+      "draft": {
+        "restored": "Draft restored from your previous session.",
+        "clear": "Clear draft",
+        "cleared": "Draft cleared."
       }
     },
     "orders": {
@@ -1321,7 +1326,24 @@
       },
       "detail": {
         "title": "Order Detail",
-        "orderId": "Order ID: {id}"
+        "orderId": "Order ID: {id}",
+        "unauthorized": "Unauthorized",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "notes": "Notes",
+        "emptyNotes": "No notes",
+        "timelineTitle": "Status Timeline",
+        "lineItemsTitle": "Line Items",
+        "qty": "Qty",
+        "unitPrice": "Unit Price",
+        "discount": "Discount (%)",
+        "discountAmount": "Discount Amount",
+        "summaryTitle": "Summary",
+        "subtotal": "Subtotal",
+        "discountTotal": "Discount Total",
+        "ppn": "PPN",
+        "grandTotal": "Grand Total",
+        "backToOrders": "Back to Orders"
       },
       "form": {
         "title": "Create Sales Order",
@@ -1365,6 +1387,11 @@
           "customerRequired": "Please select customer",
           "invalidOrderLines": "Invalid order lines",
           "createOrderFailed": "Failed to create order"
+        },
+        "draft": {
+          "restored": "Draft restored from your previous session.",
+          "clear": "Clear draft",
+          "cleared": "Draft cleared."
         }
       }
     }

@@ -1268,6 +1268,11 @@
         "gpsRequired": "GPS wajib diisi",
         "photoRequired": "Foto wajib diisi",
         "failedCheckIn": "Check-in gagal"
+      },
+      "draft": {
+        "restored": "Draf dipulihkan dari sesi sebelumnya.",
+        "clear": "Hapus draf",
+        "cleared": "Draf dihapus."
       }
     },
     "orders": {
@@ -1291,7 +1296,24 @@
       },
       "detail": {
         "title": "Detail Pesanan",
-        "orderId": "ID Pesanan: {id}"
+        "orderId": "ID Pesanan: {id}",
+        "unauthorized": "Tidak diizinkan",
+        "createdAt": "Dibuat Pada",
+        "createdBy": "Dibuat Oleh",
+        "notes": "Catatan",
+        "emptyNotes": "Tidak ada catatan",
+        "timelineTitle": "Timeline Status",
+        "lineItemsTitle": "Item Pesanan",
+        "qty": "Qty",
+        "unitPrice": "Harga Satuan",
+        "discount": "Diskon (%)",
+        "discountAmount": "Jumlah Diskon",
+        "summaryTitle": "Ringkasan",
+        "subtotal": "Subtotal",
+        "discountTotal": "Total Diskon",
+        "ppn": "PPN",
+        "grandTotal": "Grand Total",
+        "backToOrders": "Kembali ke Pesanan"
       },
       "form": {
         "title": "Buat Pesanan Penjualan",
@@ -1335,6 +1357,11 @@
           "customerRequired": "Silakan pilih pelanggan",
           "invalidOrderLines": "Item pesanan tidak valid",
           "createOrderFailed": "Gagal membuat pesanan"
+        },
+        "draft": {
+          "restored": "Draf dipulihkan dari sesi sebelumnya.",
+          "clear": "Hapus draf",
+          "cleared": "Draf dihapus."
         }
       }
     }

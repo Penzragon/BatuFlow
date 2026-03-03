@@ -460,7 +460,7 @@ export class SalesOrderService {
   /**
    * Gets a single SO with lines, customer, visit info.
    */
-  static async getSO(id: string) {
+  static async getSO(id: string, viewer?: { id: string; role: string }) {
     const so = await prisma.salesOrder.findUnique({
       where: { id },
       include: {
@@ -475,6 +475,11 @@ export class SalesOrderService {
       },
     });
     if (!so) throw new Error("Sales order not found");
+
+    if (viewer?.role === "STAFF" && so.createdBy !== viewer.id) {
+      throw new Error("Sales order not found");
+    }
+
     return so;
   }
 
