@@ -1363,7 +1363,12 @@
         "discountTotal": "Discount Total",
         "ppn": "PPN",
         "grandTotal": "Grand Total",
-        "backToOrders": "Back to Orders"
+        "backToOrders": "Back to Orders",
+        "statusTimestampHint": "Status Timestamp",
+        "statusUpdatedAt": "Last Status Update",
+        "approvedAt": "Approved At",
+        "rejectedAt": "Rejected At",
+        "latestDeliveryOrderAt": "Latest Delivery Update"
       },
       "form": {
         "title": "Create Sales Order",

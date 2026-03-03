@@ -1333,7 +1333,12 @@
         "discountTotal": "Total Diskon",
         "ppn": "PPN",
         "grandTotal": "Grand Total",
-        "backToOrders": "Kembali ke Pesanan"
+        "backToOrders": "Kembali ke Pesanan",
+        "statusTimestampHint": "Waktu Status",
+        "statusUpdatedAt": "Pembaruan Status Terakhir",
+        "approvedAt": "Disetujui Pada",
+        "rejectedAt": "Ditolak Pada",
+        "latestDeliveryOrderAt": "Pembaruan Pengiriman Terakhir"
       },
       "form": {
         "title": "Buat Pesanan Penjualan",
