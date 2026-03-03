@@ -1220,6 +1220,16 @@
           "title": "Pesanan Saya",
           "description": "Pantau status"
         }
+      },
+      "kpi": {
+        "todayVisits": "Kunjungan Hari Ini",
+        "ordersToday": "Pesanan Hari Ini",
+        "todayRevenue": "Pendapatan Hari Ini",
+        "pendingOrders": "Pesanan Tertunda",
+        "overdueInvoices": "Invoice Jatuh Tempo",
+        "loading": "Memuat metrik dashboard…",
+        "empty": "Belum ada aktivitas. Mulai kunjungan atau buat pesanan hari ini.",
+        "error": "Gagal memuat metrik dashboard. Silakan coba lagi."
       }
     },
     "customers": {

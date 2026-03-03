@@ -1250,6 +1250,16 @@
           "title": "My Orders",
           "description": "Track status"
         }
+      },
+      "kpi": {
+        "todayVisits": "Today Visits",
+        "ordersToday": "Orders Today",
+        "todayRevenue": "Today Revenue",
+        "pendingOrders": "Pending Orders",
+        "overdueInvoices": "Overdue Invoices",
+        "loading": "Loading dashboard metrics…",
+        "empty": "No activity yet. Start your first visit or order today.",
+        "error": "Failed to load dashboard metrics. Please try again."
       }
     },
     "customers": {
