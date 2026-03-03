@@ -22,6 +22,7 @@ interface CheckOutParams {
   actorRole: string;
   checkoutAt?: Date;
   checkoutPhotoPath?: string;
+  checkoutNotes?: string;
   gpsLatitude?: number;
   gpsLongitude?: number;
   gpsAccuracy?: number;
@@ -123,6 +124,7 @@ export class VisitService {
       actorRole,
       checkoutAt,
       checkoutPhotoPath,
+      checkoutNotes,
       gpsLatitude,
       gpsLongitude,
       gpsAccuracy,
@@ -200,6 +202,9 @@ export class VisitService {
         gpsReasonCode: gpsReasonCode ?? null,
         overrideBy: isForceCheckout || staleVisit.status === "STALE_OPEN" ? actorUserId : null,
         overrideReason: isForceCheckout || staleVisit.status === "STALE_OPEN" ? overrideReason ?? null : null,
+        notes: checkoutNotes?.trim()
+          ? [staleVisit.notes, `Checkout: ${checkoutNotes.trim()}`].filter(Boolean).join("\n")
+          : undefined,
       },
     });
 
@@ -318,6 +323,43 @@ export class VisitService {
     return `/uploads/visits/${filename}`;
   }
 
+  static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
+    const sharp = (await import("sharp")).default;
+    const { mkdir, stat, rename } = await import("fs/promises");
+    const path = await import("path");
+
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits", "checkout", year, month);
+    await mkdir(uploadDir, { recursive: true });
+
+    const timestamp = now.toISOString().replace(/[:.]/g, "-");
+    const filename = `checkout-${timestamp}.jpg`;
+    const filepath = path.join(uploadDir, filename);
+
+    const watermarkText = `${now.toLocaleString("id-ID")} | ${actorUserId} | ${customerId}`;
+    const svgText = `<svg width="1000" height="60">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
+      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
+    </svg>`;
+
+    await sharp(buffer)
+      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+      .composite([{ input: Buffer.from(svgText), gravity: "south" }])
+      .jpeg({ quality: 80 })
+      .toFile(filepath);
+
+    const stats = await stat(filepath);
+    if (stats.size > 1024 * 1024) {
+      await sharp(filepath)
+        .jpeg({ quality: 60 })
+        .toFile(filepath + ".tmp");
+      await rename(filepath + ".tmp", filepath);
+    }
+
+    return `/uploads/visits/checkout/${year}/${month}/${filename}`;
+  }
   static async getActiveVisit(customerId: string, salespersonId: string): Promise<CustomerVisit | null> {
     return prisma.customerVisit.findFirst({
       where: {
@@ -325,7 +367,6 @@ export class VisitService {
         salespersonId,
         status: "OPEN",
         checkoutAt: null,
-        expiresAt: { gt: new Date() },
       },
       orderBy: { checkInAt: "desc" },
       include: {
@@ -373,7 +414,16 @@ export class VisitService {
     ]);
 
     return {
-      items: items as unknown as CustomerVisit[],
+      items: items.map((visit) => {
+        const durationMinutes = visit.checkoutAt
+          ? Math.max(0, Math.round((visit.checkoutAt.getTime() - visit.checkInAt.getTime()) / 60000))
+          : null;
+
+        return {
+          ...visit,
+          durationMinutes,
+        };
+      }) as unknown as CustomerVisit[],
       total,
       page,
       pageSize,

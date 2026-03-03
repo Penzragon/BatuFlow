@@ -17,5 +17,23 @@ export const GET = apiHandler(async (req) => {
     viewer: { id: user.id, role: user.role },
   });
 
-  return successResponse(result);
+  return successResponse({
+    ...result,
+    items: result.items.map((visit) => {
+      const checkoutAt = (visit as { checkoutAt?: Date | null }).checkoutAt ?? null;
+      const checkInAt = (visit as { checkInAt?: Date | null }).checkInAt ?? null;
+      const durationMinutes = checkoutAt && checkInAt
+        ? Math.max(0, Math.round((new Date(checkoutAt).getTime() - new Date(checkInAt).getTime()) / 60000))
+        : null;
+
+      return {
+        ...visit,
+        lifecycle: {
+          status: (visit as { status?: string }).status ?? null,
+          checkoutAt,
+          durationMinutes,
+        },
+      };
+    }),
+  });
 });

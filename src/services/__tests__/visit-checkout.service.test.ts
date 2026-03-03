@@ -40,6 +40,7 @@ describe("VisitService.checkOut", () => {
       status: "OPEN",
       checkInAt: new Date(),
       checkoutAt: null,
+      notes: null,
     };
     const checkedOutVisit = {
       ...openVisit,
@@ -105,6 +106,7 @@ describe("VisitService.checkOut", () => {
       status: "OPEN",
       checkInAt: new Date(),
       checkoutAt: null,
+      notes: null,
     });
 
     await expect(
@@ -118,6 +120,29 @@ describe("VisitService.checkOut", () => {
     ).rejects.toMatchObject({ message: "Forbidden", status: 403 });
   });
 
+  it("requires gps reason code when gps is missing", async () => {
+    const { VisitService } = await import("../visit.service");
+    const { prisma } = await import("@/lib/db");
+
+    (prisma.customerVisit.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "visit-1",
+      customerId: "cust-1",
+      salespersonId: "staff-1",
+      status: "OPEN",
+      checkInAt: new Date(),
+      checkoutAt: null,
+      notes: null,
+    });
+
+    await expect(
+      VisitService.checkOut({
+        visitId: "visit-1",
+        actorUserId: "staff-1",
+        actorRole: "STAFF",
+      })
+    ).rejects.toThrow("GPS reason code is required when GPS is unavailable");
+  });
+
   it("allows manager override with required reason", async () => {
     const { VisitService } = await import("../visit.service");
     const { prisma } = await import("@/lib/db");
@@ -129,6 +154,7 @@ describe("VisitService.checkOut", () => {
       status: "OPEN",
       checkInAt: new Date(),
       checkoutAt: null,
+      notes: "Checked in",
     };
     const checkedOutVisit = {
       ...openVisit,
@@ -140,6 +166,7 @@ describe("VisitService.checkOut", () => {
       gpsReasonCode: "GPS_TIMEOUT",
       checkoutPhotoPath: null,
       overrideReason: "STALE_CLOSURE",
+      notes: "Checked in\nCheckout: Force-closed",
     };
 
     (prisma.customerVisit.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(openVisit);
@@ -151,9 +178,16 @@ describe("VisitService.checkOut", () => {
       actorRole: "MANAGER",
       overrideReason: "STALE_CLOSURE",
       gpsReasonCode: "GPS_TIMEOUT",
+      checkoutNotes: "Force-closed",
     });
 
     expect(result.status).toBe("CHECKED_OUT");
-    expect(prisma.customerVisit.update).toHaveBeenCalled();
+    expect(prisma.customerVisit.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          notes: "Checked in\nCheckout: Force-closed",
+        }),
+      })
+    );
   });
 });
