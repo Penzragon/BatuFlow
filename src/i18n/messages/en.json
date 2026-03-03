@@ -1261,6 +1261,11 @@
         "loading": "Loading dashboard metrics…",
         "empty": "No activity yet. Start your first visit or order today.",
         "error": "Failed to load dashboard metrics. Please try again."
+      },
+      "activeVisit": {
+        "badge": "Active Visit",
+        "checkedInAt": "Checked in: {at}",
+        "checkoutNow": "Check Out Now"
       }
     },
     "customers": {
@@ -1323,6 +1328,57 @@
         "clear": "Clear draft",
         "cleared": "Draft cleared.",
         "saveFailed": "Draft could not be saved on this device. You can still continue and submit manually."
+      },
+      "checkout": {
+        "title": "Visit Check-out",
+        "subtitle": "Complete your active visit with GPS, optional notes, and optional photo evidence.",
+        "unauthorized": "Unauthorized",
+        "notFound": "Visit not found",
+        "checkInAt": "Checked in: {at}",
+        "notesLabel": "Notes (optional)",
+        "notesPlaceholder": "Add visit outcome notes (optional)",
+        "submit": "Submit Check-out",
+        "submitting": "Submitting...",
+        "success": "Check-out success",
+        "gps": {
+          "title": "Check-out GPS",
+          "refresh": "Refresh GPS",
+          "retry": "Retry GPS",
+          "loading": "Getting GPS...",
+          "accuracy": "Accuracy: ±{meters} m",
+          "notCaptured": "GPS not captured yet",
+          "reasonLabel": "If GPS is unavailable, choose a reason:",
+          "reasonPlaceholder": "Select GPS reason",
+          "reasons": {
+            "GPS_DENIED": "GPS permission denied",
+            "GPS_TIMEOUT": "GPS timeout",
+            "DEVICE_ERROR": "Device error",
+            "NO_SIGNAL": "No signal"
+          }
+        },
+        "photo": {
+          "title": "Check-out Photo (optional)",
+          "pick": "Choose Photo",
+          "previewAlt": "Check-out photo preview"
+        },
+        "summary": {
+          "title": "Check-out Summary",
+          "status": "Status: {status}",
+          "checkOutAt": "Check-out at: {at}",
+          "duration": "Duration: {minutes} minutes",
+          "backToDashboard": "Back to Dashboard"
+        },
+        "errors": {
+          "failedCheckout": "Check-out failed",
+          "alreadyCheckedOut": "Visit already checked out",
+          "gpsCapture": "Could not get GPS location",
+          "gpsPermission": "Location permission is blocked. Enable location access and retry.",
+          "gpsTimeout": "GPS took too long. Move to an open area and retry.",
+          "gpsReasonRequired": "Please select a GPS reason when location is unavailable",
+          "invalidGpsReason": "Invalid GPS reason",
+          "invalidPhotoType": "Invalid photo format. Use JPEG/JPG/WebP",
+          "photoTooLarge": "Photo must be 1 MB or smaller"
+        }
       }
     },
     "orders": {

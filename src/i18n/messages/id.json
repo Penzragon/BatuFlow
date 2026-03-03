@@ -1231,6 +1231,11 @@
         "loading": "Memuat metrik dashboard…",
         "empty": "Belum ada aktivitas. Mulai kunjungan atau buat pesanan hari ini.",
         "error": "Gagal memuat metrik dashboard. Silakan coba lagi."
+      },
+      "activeVisit": {
+        "badge": "Kunjungan Aktif",
+        "checkedInAt": "Check-in: {at}",
+        "checkoutNow": "Check-out Sekarang"
       }
     },
     "customers": {
@@ -1293,6 +1298,57 @@
         "clear": "Hapus draf",
         "cleared": "Draf dihapus.",
         "saveFailed": "Draf tidak dapat disimpan di perangkat ini. Anda tetap bisa lanjut dan kirim manual."
+      },
+      "checkout": {
+        "title": "Check-out Kunjungan",
+        "subtitle": "Selesaikan kunjungan aktif dengan GPS, catatan, dan foto opsional.",
+        "unauthorized": "Tidak diizinkan",
+        "notFound": "Kunjungan tidak ditemukan",
+        "checkInAt": "Check-in: {at}",
+        "notesLabel": "Catatan (opsional)",
+        "notesPlaceholder": "Tambahkan ringkasan hasil kunjungan (opsional)",
+        "submit": "Kirim Check-out",
+        "submitting": "Mengirim...",
+        "success": "Check-out berhasil",
+        "gps": {
+          "title": "GPS Check-out",
+          "refresh": "Muat ulang GPS",
+          "retry": "Coba lagi GPS",
+          "loading": "Mengambil GPS...",
+          "accuracy": "Akurasi: ±{meters} m",
+          "notCaptured": "GPS belum tersedia",
+          "reasonLabel": "Jika GPS tidak tersedia, pilih alasan:",
+          "reasonPlaceholder": "Pilih alasan GPS",
+          "reasons": {
+            "GPS_DENIED": "Izin GPS ditolak",
+            "GPS_TIMEOUT": "GPS timeout",
+            "DEVICE_ERROR": "Error perangkat",
+            "NO_SIGNAL": "Tidak ada sinyal"
+          }
+        },
+        "photo": {
+          "title": "Foto Check-out (opsional)",
+          "pick": "Pilih Foto",
+          "previewAlt": "Pratinjau foto check-out"
+        },
+        "summary": {
+          "title": "Ringkasan Check-out",
+          "status": "Status: {status}",
+          "checkOutAt": "Waktu check-out: {at}",
+          "duration": "Durasi: {minutes} menit",
+          "backToDashboard": "Kembali ke Dashboard"
+        },
+        "errors": {
+          "failedCheckout": "Check-out gagal",
+          "alreadyCheckedOut": "Kunjungan sudah check-out",
+          "gpsCapture": "Tidak dapat mengambil lokasi GPS",
+          "gpsPermission": "Izin lokasi diblokir. Aktifkan akses lokasi lalu coba lagi.",
+          "gpsTimeout": "GPS terlalu lama merespons. Pindah ke area terbuka lalu coba lagi.",
+          "gpsReasonRequired": "Pilih alasan GPS jika lokasi tidak tersedia",
+          "invalidGpsReason": "Alasan GPS tidak valid",
+          "invalidPhotoType": "Format foto tidak valid. Gunakan JPEG/JPG/WebP",
+          "photoTooLarge": "Ukuran foto maksimal 1 MB"
+        }
       }
     },
     "orders": {
