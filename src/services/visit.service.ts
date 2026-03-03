@@ -34,6 +34,7 @@ interface CheckOutParams {
 interface VisitListParams extends PaginationParams {
   salespersonId?: string;
   customerId?: string;
+  status?: "OPEN" | "CHECKED_OUT" | "STALE_OPEN";
   dateFrom?: string;
   dateTo?: string;
   viewer?: { id: string; role: string };
@@ -376,7 +377,7 @@ export class VisitService {
   }
 
   static async listVisits(params: VisitListParams): Promise<PaginatedResponse<CustomerVisit>> {
-    const { page, pageSize, salespersonId, customerId, dateFrom, dateTo, search, viewer } = params;
+    const { page, pageSize, salespersonId, customerId, status, dateFrom, dateTo, search, viewer } = params;
 
     const where: Record<string, unknown> = {};
     if (viewer?.role === "STAFF") {
@@ -385,6 +386,7 @@ export class VisitService {
       where.salespersonId = salespersonId;
     }
     if (customerId) where.customerId = customerId;
+    if (status) where.status = status;
     if (dateFrom || dateTo) {
       where.checkInAt = {
         ...(dateFrom ? { gte: new Date(dateFrom) } : {}),

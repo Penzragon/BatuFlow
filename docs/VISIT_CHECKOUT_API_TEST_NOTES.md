@@ -18,7 +18,7 @@
    - Supports optional `notes`, `checkoutAt`, `overrideReason`
 2. `GET /api/visits`
    - Preserves existing response fields
-   - Adds additive `lifecycle` object per item: `{ status, checkoutAt, durationMinutes }`
+   - Adds additive `lifecycle` object per item: `{ status, checkInAt, checkoutAt, checkInDate, checkoutDate, isCompleted, isCrossDay, durationMinutes }`
 3. `GET /api/visits/active`
    - Uses OPEN lifecycle semantics (`status=OPEN` and `checkoutAt=null`)
 

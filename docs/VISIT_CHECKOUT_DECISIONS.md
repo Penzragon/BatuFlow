@@ -166,3 +166,25 @@ This document freezes operational decisions for Visit Check-out so implementatio
 - Separate cards/measures: `Today Visits (Started)`, `Completed Today`, `Completion Rate`.
 - Cross-day report support using both start and checkout date dimensions.
 - Include stale/open aging view for supervisor cleanup.
+
+---
+
+## Implementation Notes (Wave B3 Alignment)
+
+This section aligns decision intent with current implementation shape on branch `feature/visit-checkout-lifecycle`.
+
+- **Lifecycle statuses in code:** `OPEN`, `CHECKED_OUT`, `STALE_OPEN` are implemented in checkout flow and stale-marking logic.
+- **Stale transition:** stale marking is currently evaluated lazily during checkout attempt (via service guard), then persisted to `STALE_OPEN` + `staleMarkedAt` when threshold is exceeded.
+- **Reporting exposure:** list endpoint (`GET /api/visits`) now exposes additive `lifecycle` fields used by BI/report consumers:
+  - `status`
+  - `checkInAt`, `checkoutAt`
+  - `checkInDate`, `checkoutDate` (ISO date keys)
+  - `isCompleted`, `isCrossDay`
+  - `durationMinutes`
+- **KPI responsibility split:**
+  - operational dashboard cards should continue to derive **Today Visits** from `checkInDate`
+  - completion cards should derive **Completed Today** from `checkoutDate`
+  - **Completion Rate** should use `completed / started` for the same reporting grain/timebox
+- **Compatibility:** lifecycle payload additions are additive and non-breaking for existing API consumers.
+
+For report-specific modeling guidance, see `docs/VISIT_LIFECYCLE_REPORTING_NOTES.md`.
