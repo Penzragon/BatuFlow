@@ -3,7 +3,7 @@ import { getCurrentUser, getClientIp } from "@/lib/auth-utils";
 import { SalesOrderService } from "@/services/sales-order.service";
 
 export const GET = apiHandler(async (req) => {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { searchParams } = new URL(req.url);
   const pagination = parsePaginationParams(searchParams);
 
@@ -14,6 +14,7 @@ export const GET = apiHandler(async (req) => {
     createdBy: searchParams.get("createdBy") ?? undefined,
     dateFrom: searchParams.get("dateFrom") ?? undefined,
     dateTo: searchParams.get("dateTo") ?? undefined,
+    viewer: { id: user.id, role: user.role },
   });
 
   return successResponse(result);

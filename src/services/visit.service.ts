@@ -21,6 +21,7 @@ interface VisitListParams extends PaginationParams {
   customerId?: string;
   dateFrom?: string;
   dateTo?: string;
+  viewer?: { id: string; role: string };
 }
 
 /**
@@ -179,10 +180,14 @@ export class VisitService {
   static async listVisits(
     params: VisitListParams
   ): Promise<PaginatedResponse<CustomerVisit>> {
-    const { page, pageSize, salespersonId, customerId, dateFrom, dateTo, search } = params;
+    const { page, pageSize, salespersonId, customerId, dateFrom, dateTo, search, viewer } = params;
 
     const where: Record<string, unknown> = {};
-    if (salespersonId) where.salespersonId = salespersonId;
+    if (viewer?.role === "STAFF") {
+      where.salespersonId = viewer.id;
+    } else if (salespersonId) {
+      where.salespersonId = salespersonId;
+    }
     if (customerId) where.customerId = customerId;
     if (dateFrom || dateTo) {
       where.checkInAt = {

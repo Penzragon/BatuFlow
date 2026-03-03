@@ -3,7 +3,7 @@ import { getCurrentUser, getClientIp } from "@/lib/auth-utils";
 import { DeliveryOrderService } from "@/services/delivery-order.service";
 
 export const GET = apiHandler(async (req) => {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { searchParams } = new URL(req.url);
   const pagination = parsePaginationParams(searchParams);
 
@@ -11,6 +11,7 @@ export const GET = apiHandler(async (req) => {
     ...pagination,
     salesOrderId: searchParams.get("salesOrderId") ?? undefined,
     status: searchParams.get("status") ?? undefined,
+    viewer: { id: user.id, role: user.role },
   });
 
   return successResponse(result);

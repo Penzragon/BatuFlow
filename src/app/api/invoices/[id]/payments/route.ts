@@ -3,8 +3,8 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import { PaymentService } from "@/services/payment.service";
 
 export const GET = apiHandler(async (_req, context) => {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { id } = await (context as { params: Promise<{ id: string }> }).params;
-  const payments = await PaymentService.listPaymentsForInvoice(id);
+  const payments = await PaymentService.listPaymentsForInvoice(id, { id: user.id, role: user.role });
   return successResponse(payments);
 });

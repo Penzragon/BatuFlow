@@ -36,6 +36,7 @@ interface SOListParams extends PaginationParams {
   createdBy?: string;
   dateFrom?: string;
   dateTo?: string;
+  viewer?: { id: string; role: string };
 }
 
 /**
@@ -44,6 +45,26 @@ interface SOListParams extends PaginationParams {
  * and status tracking through delivery and closure.
  */
 export class SalesOrderService {
+  private static applyStaffScope(where: Record<string, unknown>, viewer?: { id: string; role: string }) {
+    if (viewer?.role !== "STAFF") return;
+    where.OR = [
+      { createdBy: viewer.id },
+      { customer: { salespersonId: viewer.id } },
+    ];
+  }
+
+  private static assertStaffCanAccessSO(
+    salesOrder: { createdBy: string; customer?: { salespersonId: string | null } | null },
+    viewer?: { id: string; role: string }
+  ) {
+    if (viewer?.role !== "STAFF") return;
+
+    const ownedByStaff =
+      salesOrder.createdBy === viewer.id || salesOrder.customer?.salespersonId === viewer.id;
+    if (!ownedByStaff) {
+      throw new Error("Sales order not found");
+    }
+  }
   /**
    * Auto-generates the next sequential SO number formatted as SO-YYYY-NNNNN.
    */
@@ -234,9 +255,13 @@ export class SalesOrderService {
   ): Promise<SalesOrder> {
     const existing = await prisma.salesOrder.findUnique({
       where: { id },
-      include: { lines: true },
+      include: {
+        lines: true,
+        customer: { select: { salespersonId: true } },
+      },
     });
     if (!existing) throw new Error("Sales order not found");
+    SalesOrderService.assertStaffCanAccessSO(existing, { id: userId, role: userRole });
     if (existing.status !== "DRAFT") throw new Error("Only draft orders can be updated");
 
     const parsed = updateSOSchema.parse(data);
@@ -353,8 +378,12 @@ export class SalesOrderService {
   static async confirmSO(
     id: string, userId: string, userRole: string, ipAddress?: string
   ): Promise<SalesOrder> {
-    const so = await prisma.salesOrder.findUnique({ where: { id } });
+    const so = await prisma.salesOrder.findUnique({
+      where: { id },
+      include: { customer: { select: { salespersonId: true } } },
+    });
     if (!so) throw new Error("Sales order not found");
+    SalesOrderService.assertStaffCanAccessSO(so, { id: userId, role: userRole });
     if (so.status !== "DRAFT") throw new Error("Only draft orders can be confirmed");
 
     const newStatus: SOStatus = so.needsApproval ? "WAITING_APPROVAL" : "CONFIRMED";
@@ -457,8 +486,12 @@ export class SalesOrderService {
   static async cancelSO(
     id: string, userId: string, userRole: string, ipAddress?: string
   ): Promise<SalesOrder> {
-    const so = await prisma.salesOrder.findUnique({ where: { id } });
+    const so = await prisma.salesOrder.findUnique({
+      where: { id },
+      include: { customer: { select: { salespersonId: true } } },
+    });
     if (!so) throw new Error("Sales order not found");
+    SalesOrderService.assertStaffCanAccessSO(so, { id: userId, role: userRole });
     if (!["DRAFT", "CONFIRMED", "WAITING_APPROVAL"].includes(so.status)) {
       throw new Error("Cannot cancel an order that is already delivered or closed");
     }
@@ -487,7 +520,7 @@ export class SalesOrderService {
       where: { id },
       include: {
         lines: { include: { product: { select: { id: true, name: true, sku: true, imageUrl: true } } } },
-        customer: { select: { id: true, name: true, email: true, phone: true, paymentTermsDays: true } },
+        customer: { select: { id: true, name: true, email: true, phone: true, paymentTermsDays: true, salespersonId: true } },
         visit: true,
         creator: { select: { id: true, name: true } },
         deliveryOrders: {
@@ -498,9 +531,7 @@ export class SalesOrderService {
     });
     if (!so) throw new Error("Sales order not found");
 
-    if (viewer?.role === "STAFF" && so.createdBy !== viewer.id) {
-      throw new Error("Sales order not found");
-    }
+    SalesOrderService.assertStaffCanAccessSO(so, viewer);
 
     return so;
   }
@@ -509,7 +540,7 @@ export class SalesOrderService {
    * Returns a paginated list of Sales Orders with filters.
    */
   static async listSOs(params: SOListParams): Promise<PaginatedResponse<SalesOrder>> {
-    const { page, pageSize, search, status, customerId, createdBy, dateFrom, dateTo } = params;
+    const { page, pageSize, search, status, customerId, createdBy, dateFrom, dateTo, viewer } = params;
 
     const where: Record<string, unknown> = { deletedAt: null };
     if (status) where.status = status;
@@ -522,11 +553,18 @@ export class SalesOrderService {
       };
     }
     if (search) {
-      where.OR = [
-        { soNumber: { contains: search, mode: "insensitive" } },
-        { customer: { name: { contains: search, mode: "insensitive" } } },
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { soNumber: { contains: search, mode: "insensitive" } },
+            { customer: { name: { contains: search, mode: "insensitive" } } },
+          ],
+        },
       ];
     }
+
+    SalesOrderService.applyStaffScope(where, viewer);
 
     const [items, total] = await Promise.all([
       prisma.salesOrder.findMany({
