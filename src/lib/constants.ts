@@ -64,6 +64,8 @@ export const STATUS_COLORS: Record<string, string> = {
   waiting_approval: "bg-orange-100 text-orange-700",
   posted: "bg-green-100 text-green-700",
   open: "bg-blue-100 text-blue-700",
+  checked_out: "bg-green-100 text-green-700",
+  stale_open: "bg-orange-100 text-orange-700",
   asset: "bg-blue-100 text-blue-700",
   liability: "bg-red-100 text-red-700",
   equity: "bg-purple-100 text-purple-700",

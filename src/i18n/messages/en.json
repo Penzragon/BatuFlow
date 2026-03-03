@@ -310,7 +310,17 @@
     "sosCreated": "SOs Created",
     "visitActive": "Active",
     "visitExpired": "Expired",
-    "selectCustomer": "Select Customer"
+    "selectCustomer": "Select Customer",
+    "status": "Status",
+    "checkInAt": "Check In At",
+    "checkOutAt": "Check Out At",
+    "duration": "Duration",
+    "checkoutDetails": "Checkout Details",
+    "notes": "Notes",
+    "photoPath": "Photo Path",
+    "statusOpen": "Open",
+    "statusCheckedOut": "Checked Out",
+    "statusStaleOpen": "Stale Open"
   },
   "commissions": {
     "title": "Commissions",

@@ -286,7 +286,17 @@
     "sosCreated": "SO Dibuat",
     "visitActive": "Aktif",
     "visitExpired": "Kedaluwarsa",
-    "selectCustomer": "Pilih Pelanggan"
+    "selectCustomer": "Pilih Pelanggan",
+    "status": "Status",
+    "checkInAt": "Waktu Check In",
+    "checkOutAt": "Waktu Check Out",
+    "duration": "Durasi",
+    "checkoutDetails": "Detail Check Out",
+    "notes": "Catatan",
+    "photoPath": "Path Foto",
+    "statusOpen": "Terbuka",
+    "statusCheckedOut": "Sudah Check Out",
+    "statusStaleOpen": "Terbuka Kedaluwarsa"
   },
   "commissions": {
     "title": "Komisi",
