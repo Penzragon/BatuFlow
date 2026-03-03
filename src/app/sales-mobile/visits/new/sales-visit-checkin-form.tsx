@@ -34,16 +34,20 @@ export default function SalesVisitCheckInForm({
   const [notes, setNotes] = useState("");
   const [gps, setGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
   const [selfieData, setSelfieData] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaveFailed, setDraftSaveFailed] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftSaveErrorNotifiedRef = useRef(false);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === customerId),
@@ -73,9 +77,15 @@ export default function SalesVisitCheckInForm({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
+      setCameraError(null);
       setCameraOn(true);
-    } catch {
-      toast.error(t("errors.cameraAccess"));
+    } catch (err) {
+      const actionableMessage =
+        err instanceof DOMException && err.name === "NotAllowedError"
+          ? t("errors.cameraPermission")
+          : t("errors.cameraAccess");
+      setCameraError(actionableMessage);
+      toast.error(actionableMessage);
     }
   };
 
@@ -100,6 +110,7 @@ export default function SalesVisitCheckInForm({
 
   const captureGps = () => {
     setGpsLoading(true);
+    setGpsError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setGps({
@@ -107,10 +118,18 @@ export default function SalesVisitCheckInForm({
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
         });
+        setGpsError(null);
         setGpsLoading(false);
       },
-      () => {
-        toast.error(t("errors.gpsCapture"));
+      (err) => {
+        const actionableMessage =
+          err.code === err.PERMISSION_DENIED
+            ? t("errors.gpsPermission")
+            : err.code === err.TIMEOUT
+              ? t("errors.gpsTimeout")
+              : t("errors.gpsCapture");
+        setGpsError(actionableMessage);
+        toast.error(actionableMessage);
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -163,11 +182,22 @@ export default function SalesVisitCheckInForm({
       };
       try {
         localStorage.setItem(VISIT_DRAFT_KEY, JSON.stringify(draft));
+        if (draftSaveFailed) {
+          setDraftSaveFailed(false);
+        }
+        draftSaveErrorNotifiedRef.current = false;
       } catch {
-        // ignore quota/private mode errors
+        setDraftSaveFailed(true);
+        if (!draftSaveErrorNotifiedRef.current) {
+          toast.error(t("draft.saveFailed"));
+          draftSaveErrorNotifiedRef.current = true;
+        }
       }
     }, 350);
-  }, [customerId, notes, selfieData, draftReady]);
+  }, [customerId, notes, selfieData, draftReady, draftSaveFailed, t]);
+
+  const gpsAccuracyWarningThreshold = 50;
+  const isGpsAccuracyLow = gps ? gps.accuracy > gpsAccuracyWarningThreshold : false;
 
   const handleSubmit = async () => {
     if (!customerId) return toast.error(t("errors.customerRequired"));
@@ -230,6 +260,12 @@ export default function SalesVisitCheckInForm({
         </div>
       )}
 
+      {draftSaveFailed && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+          {t("draft.saveFailed")}
+        </div>
+      )}
+
       <div className="space-y-2">
         <label className="text-sm font-medium">{t("customerLabel")}</label>
         <select
@@ -257,7 +293,7 @@ export default function SalesVisitCheckInForm({
             onClick={captureGps}
             className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-accent"
           >
-            <RotateCcw size={12} /> {t("gps.refresh")}
+            <RotateCcw size={12} /> {gpsError ? t("gps.retry") : t("gps.refresh")}
           </button>
         </div>
         {gpsLoading ? (
@@ -266,9 +302,18 @@ export default function SalesVisitCheckInForm({
           <div className="space-y-1 text-xs">
             <p className="inline-flex items-center gap-1"><MapPin size={12} /> {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</p>
             <p className="text-muted-foreground">{t("gps.accuracy", { meters: Math.round(gps.accuracy) })}</p>
+            {isGpsAccuracyLow && (
+              <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                {t("gps.softAccuracyWarning", { meters: Math.round(gps.accuracy) })}
+              </p>
+            )}
           </div>
         ) : (
-          <p className="text-xs text-red-600">{t("gps.notCaptured")}</p>
+          <div className="space-y-1">
+            <p className="text-xs text-red-600">{t("gps.notCaptured")}</p>
+            {gpsError && <p className="text-xs text-red-600">{gpsError}</p>}
+            <p className="text-xs text-muted-foreground">{t("gps.retryHint")}</p>
+          </div>
         )}
       </div>
 
@@ -286,7 +331,7 @@ export default function SalesVisitCheckInForm({
                   onClick={startCamera}
                   className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-accent"
                 >
-                  <Camera size={14} /> {t("photo.startCamera")}
+                  <Camera size={14} /> {cameraError ? t("photo.retryCamera") : t("photo.startCamera")}
                 </button>
               ) : (
                 <button
@@ -298,6 +343,8 @@ export default function SalesVisitCheckInForm({
                 </button>
               )}
             </div>
+            {cameraError && <p className="text-xs text-red-600">{cameraError}</p>}
+            {!cameraOn && !cameraError && <p className="text-xs text-muted-foreground">{t("photo.retryHint")}</p>}
           </>
         ) : (
           <div className="space-y-2">

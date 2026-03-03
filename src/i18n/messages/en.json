@@ -1293,14 +1293,19 @@
         "refresh": "Refresh",
         "loading": "Getting GPS...",
         "accuracy": "Accuracy: ±{meters} m",
-        "notCaptured": "GPS not captured yet"
+        "notCaptured": "GPS not captured yet",
+        "retry": "Retry GPS",
+        "retryHint": "If location fails, enable Location permission and tap retry.",
+        "softAccuracyWarning": "Low GPS accuracy (±{meters} m). You can submit, but move to an open area and refresh for better accuracy."
       },
       "photo": {
         "title": "Selfie Photo",
         "startCamera": "Start Camera",
         "capture": "Capture",
         "retake": "Retake",
-        "previewAlt": "Selfie preview"
+        "previewAlt": "Selfie preview",
+        "retryCamera": "Retry Camera",
+        "retryHint": "If camera does not open, allow Camera permission and try again."
       },
       "errors": {
         "cameraAccess": "Could not access camera",
@@ -1308,12 +1313,17 @@
         "customerRequired": "Please select customer",
         "gpsRequired": "GPS is required",
         "photoRequired": "Photo is required",
-        "failedCheckIn": "Check-in failed"
+        "failedCheckIn": "Check-in failed",
+        "cameraPermission": "Camera permission is blocked. Allow camera access and try again.",
+        "gpsPermission": "Location permission is blocked. Enable location access and retry.",
+        "gpsTimeout": "GPS took too long. Move to an open area and retry."
       },
       "draft": {
         "restored": "Draft restored from your previous session.",
         "clear": "Clear draft",
-        "cleared": "Draft cleared."
+        "cleared": "Draft cleared.",
+        "saveFailed": "Could not save draft on this device. You can continue, but draft auto-save is unavailable.",
+        "saveFailed": "Draft could not be saved on this device. You can still continue and submit manually."
       }
     },
     "orders": {
@@ -1402,7 +1412,8 @@
         "draft": {
           "restored": "Draft restored from your previous session.",
           "clear": "Clear draft",
-          "cleared": "Draft cleared."
+          "cleared": "Draft cleared.",
+          "saveFailed": "Could not save draft on this device. You can continue, but draft auto-save is unavailable."
         }
       }
     }
