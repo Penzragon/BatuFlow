@@ -878,11 +878,10 @@
   },
   "journalEntries": {
     "title": "Journal Entries",
-    "description": "General ledger journal entries",
+    "description": "Description",
     "createEntry": "Create Journal Entry",
     "entryNumber": "Entry Number",
     "entryDate": "Entry Date",
-    "description": "Description",
     "referenceType": "Reference Type",
     "referenceId": "Reference ID",
     "status": "Status",
@@ -1221,5 +1220,191 @@
     "maxLength": "Must be at most {max} characters",
     "invalidFormat": "Invalid format",
     "duplicateValue": "This value already exists"
+  },
+  "salesMobile": {
+    "appLabel": "Sales App",
+    "logout": "Logout",
+    "nav": {
+      "home": "Home",
+      "customers": "Customers",
+      "checkIn": "Check-in",
+      "orders": "Orders"
+    },
+    "dashboard": {
+      "title": "Sales Dashboard",
+      "subtitle": "Welcome to Sales App v1. Start with visit check-in or create an order.",
+      "quickActions": "Quick Actions",
+      "cards": {
+        "newCheckIn": {
+          "title": "New Check-in",
+          "description": "Photo + GPS + timestamp"
+        },
+        "newOrder": {
+          "title": "New Order",
+          "description": "Quick order entry"
+        },
+        "customers": {
+          "title": "Customers",
+          "description": "Browse assigned customers"
+        },
+        "myOrders": {
+          "title": "My Orders",
+          "description": "Track status"
+        }
+      },
+      "kpi": {
+        "todayVisits": "Today Visits",
+        "ordersToday": "Orders Today",
+        "todayRevenue": "Today Revenue",
+        "pendingOrders": "Pending Orders",
+        "overdueInvoices": "Overdue Invoices",
+        "loading": "Loading dashboard metrics…",
+        "empty": "No activity yet. Start your first visit or order today.",
+        "error": "Failed to load dashboard metrics. Please try again."
+      }
+    },
+    "customers": {
+      "title": "Customers",
+      "unauthorized": "Unauthorized",
+      "assignedCount": "Assigned customers: {count}",
+      "emptyState": "No assigned customers yet.",
+      "noPhone": "No phone",
+      "paymentTerms": "TOP {days} days",
+      "detail": {
+        "title": "Customer Detail",
+        "customerId": "Customer ID: {id}",
+        "startCheckIn": "Start Visit Check-in",
+        "createOrder": "Create New Order"
+      }
+    },
+    "visits": {
+      "title": "Visit Check-in",
+      "subtitle": "Photo + GPS + timestamp will be recorded",
+      "unauthorized": "Unauthorized",
+      "customerLabel": "Customer",
+      "customerPlaceholder": "Select customer",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Extra notes from customer visit",
+      "submit": "Submit Check-in",
+      "submitting": "Submitting...",
+      "success": "Check-in success",
+      "gps": {
+        "title": "GPS",
+        "refresh": "Refresh",
+        "loading": "Getting GPS...",
+        "accuracy": "Accuracy: ±{meters} m",
+        "notCaptured": "GPS not captured yet"
+      },
+      "photo": {
+        "title": "Selfie Photo",
+        "startCamera": "Start Camera",
+        "capture": "Capture",
+        "retake": "Retake",
+        "previewAlt": "Selfie preview"
+      },
+      "errors": {
+        "cameraAccess": "Could not access camera",
+        "gpsCapture": "Could not get GPS location",
+        "customerRequired": "Please select customer",
+        "gpsRequired": "GPS is required",
+        "photoRequired": "Photo is required",
+        "failedCheckIn": "Check-in failed"
+      },
+      "draft": {
+        "restored": "Draft restored from your previous session.",
+        "clear": "Clear draft",
+        "cleared": "Draft cleared."
+      }
+    },
+    "orders": {
+      "title": "My Orders",
+      "unauthorized": "Unauthorized",
+      "recentCount": "Recent orders: {count}",
+      "newButton": "New",
+      "emptyState": "No orders yet.",
+      "status": {
+        "DRAFT": "Draft",
+        "CONFIRMED": "Confirmed",
+        "WAITING_APPROVAL": "Waiting Approval",
+        "PARTIALLY_DELIVERED": "Partially Delivered",
+        "FULLY_DELIVERED": "Fully Delivered",
+        "CLOSED": "Closed",
+        "CANCELLED": "Cancelled"
+      },
+      "new": {
+        "title": "Create Sales Order",
+        "subtitle": "v1 scaffold: quick order form (customer, items, qty) will be implemented next."
+      },
+      "detail": {
+        "title": "Order Detail",
+        "orderId": "Order ID: {id}",
+        "unauthorized": "Unauthorized",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "notes": "Notes",
+        "emptyNotes": "No notes",
+        "timelineTitle": "Status Timeline",
+        "lineItemsTitle": "Line Items",
+        "qty": "Qty",
+        "unitPrice": "Unit Price",
+        "discount": "Discount (%)",
+        "discountAmount": "Discount Amount",
+        "summaryTitle": "Summary",
+        "subtotal": "Subtotal",
+        "discountTotal": "Discount Total",
+        "ppn": "PPN",
+        "grandTotal": "Grand Total",
+        "backToOrders": "Back to Orders"
+      },
+      "form": {
+        "title": "Create Sales Order",
+        "customerSection": {
+          "title": "Customer",
+          "customerLabel": "Customer",
+          "customerPlaceholder": "Select customer",
+          "notesLabel": "Notes",
+          "includePpn": "Include PPN"
+        },
+        "linesSection": {
+          "title": "Lines",
+          "add": "Add",
+          "empty": "No items yet",
+          "lineNumber": "Line #{index}",
+          "productLabel": "Product",
+          "productPlaceholder": "Select product",
+          "qtyLabel": "Qty",
+          "unitPriceLabel": "Unit Price",
+          "discountTypeLabel": "Discount Type",
+          "discountValueLabel": "Discount Value",
+          "discountTypes": {
+            "percent": "Percent (%)",
+            "amount": "Amount (Rp)"
+          },
+          "priceOverride": "Price override",
+          "lineTotal": "Line Total"
+        },
+        "summary": {
+          "title": "Summary",
+          "itemsTotal": "Items total",
+          "discount": "Discount",
+          "subtotal": "Subtotal",
+          "ppn": "PPN",
+          "grandTotal": "Grand Total"
+        },
+        "submit": "Create Order",
+        "submitting": "Submitting...",
+        "success": "Sales order created",
+        "errors": {
+          "customerRequired": "Please select customer",
+          "invalidOrderLines": "Invalid order lines",
+          "createOrderFailed": "Failed to create order"
+        },
+        "draft": {
+          "restored": "Draft restored from your previous session.",
+          "clear": "Clear draft",
+          "cleared": "Draft cleared."
+        }
+      }
+    }
   }
 }

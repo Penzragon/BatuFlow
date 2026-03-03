@@ -58,9 +58,12 @@ export class VisitService {
 
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      select: { id: true, name: true, gpsLatitude: true, gpsLongitude: true },
+      select: { id: true, name: true, gpsLatitude: true, gpsLongitude: true, salespersonId: true, deletedAt: true, isActive: true },
     });
-    if (!customer) throw new Error("Customer not found");
+    if (!customer || customer.deletedAt || !customer.isActive) throw new Error("Customer not found");
+    if (userRole === "STAFF" && customer.salespersonId !== salespersonId) {
+      throw new Error("Customer not found");
+    }
 
     let selfieUrl: string | null = null;
     if (selfieBuffer) {

@@ -854,11 +854,10 @@
   },
   "journalEntries": {
     "title": "Jurnal Umum",
-    "description": "Jurnal buku besar umum",
+    "description": "Deskripsi",
     "createEntry": "Buat Jurnal",
     "entryNumber": "No. Jurnal",
     "entryDate": "Tanggal Jurnal",
-    "description": "Deskripsi",
     "referenceType": "Tipe Referensi",
     "referenceId": "ID Referensi",
     "status": "Status",
@@ -1191,5 +1190,191 @@
     "maxLength": "Maksimal {max} karakter",
     "invalidFormat": "Format tidak valid",
     "duplicateValue": "Nilai ini sudah ada"
+  },
+  "salesMobile": {
+    "appLabel": "Aplikasi Sales",
+    "logout": "Keluar",
+    "nav": {
+      "home": "Beranda",
+      "customers": "Pelanggan",
+      "checkIn": "Check-in",
+      "orders": "Pesanan"
+    },
+    "dashboard": {
+      "title": "Dashboard Sales",
+      "subtitle": "Selamat datang di Sales App v1. Mulai dari check-in kunjungan atau buat pesanan.",
+      "quickActions": "Aksi Cepat",
+      "cards": {
+        "newCheckIn": {
+          "title": "Check-in Baru",
+          "description": "Foto + GPS + timestamp"
+        },
+        "newOrder": {
+          "title": "Pesanan Baru",
+          "description": "Input pesanan cepat"
+        },
+        "customers": {
+          "title": "Pelanggan",
+          "description": "Lihat pelanggan yang ditugaskan"
+        },
+        "myOrders": {
+          "title": "Pesanan Saya",
+          "description": "Pantau status"
+        }
+      },
+      "kpi": {
+        "todayVisits": "Kunjungan Hari Ini",
+        "ordersToday": "Pesanan Hari Ini",
+        "todayRevenue": "Pendapatan Hari Ini",
+        "pendingOrders": "Pesanan Tertunda",
+        "overdueInvoices": "Invoice Jatuh Tempo",
+        "loading": "Memuat metrik dashboard…",
+        "empty": "Belum ada aktivitas. Mulai kunjungan atau buat pesanan hari ini.",
+        "error": "Gagal memuat metrik dashboard. Silakan coba lagi."
+      }
+    },
+    "customers": {
+      "title": "Pelanggan",
+      "unauthorized": "Tidak diizinkan",
+      "assignedCount": "Pelanggan ditugaskan: {count}",
+      "emptyState": "Belum ada pelanggan yang ditugaskan.",
+      "noPhone": "Tidak ada telepon",
+      "paymentTerms": "TOP {days} hari",
+      "detail": {
+        "title": "Detail Pelanggan",
+        "customerId": "ID Pelanggan: {id}",
+        "startCheckIn": "Mulai Check-in Kunjungan",
+        "createOrder": "Buat Pesanan Baru"
+      }
+    },
+    "visits": {
+      "title": "Check-in Kunjungan",
+      "subtitle": "Foto + GPS + timestamp akan direkam",
+      "unauthorized": "Tidak diizinkan",
+      "customerLabel": "Pelanggan",
+      "customerPlaceholder": "Pilih pelanggan",
+      "notesLabel": "Catatan (opsional)",
+      "notesPlaceholder": "Catatan tambahan dari kunjungan pelanggan",
+      "submit": "Kirim Check-in",
+      "submitting": "Mengirim...",
+      "success": "Check-in berhasil",
+      "gps": {
+        "title": "GPS",
+        "refresh": "Muat ulang",
+        "loading": "Mengambil GPS...",
+        "accuracy": "Akurasi: ±{meters} m",
+        "notCaptured": "GPS belum terekam"
+      },
+      "photo": {
+        "title": "Foto Selfie",
+        "startCamera": "Mulai Kamera",
+        "capture": "Ambil Foto",
+        "retake": "Ambil Ulang",
+        "previewAlt": "Pratinjau selfie"
+      },
+      "errors": {
+        "cameraAccess": "Tidak dapat mengakses kamera",
+        "gpsCapture": "Tidak dapat mengambil lokasi GPS",
+        "customerRequired": "Silakan pilih pelanggan",
+        "gpsRequired": "GPS wajib diisi",
+        "photoRequired": "Foto wajib diisi",
+        "failedCheckIn": "Check-in gagal"
+      },
+      "draft": {
+        "restored": "Draf dipulihkan dari sesi sebelumnya.",
+        "clear": "Hapus draf",
+        "cleared": "Draf dihapus."
+      }
+    },
+    "orders": {
+      "title": "Pesanan Saya",
+      "unauthorized": "Tidak diizinkan",
+      "recentCount": "Pesanan terbaru: {count}",
+      "newButton": "Baru",
+      "emptyState": "Belum ada pesanan.",
+      "status": {
+        "DRAFT": "Draf",
+        "CONFIRMED": "Dikonfirmasi",
+        "WAITING_APPROVAL": "Menunggu Persetujuan",
+        "PARTIALLY_DELIVERED": "Terkirim Sebagian",
+        "FULLY_DELIVERED": "Terkirim Penuh",
+        "CLOSED": "Ditutup",
+        "CANCELLED": "Dibatalkan"
+      },
+      "new": {
+        "title": "Buat Sales Order",
+        "subtitle": "Kerangka v1: formulir pesanan cepat (pelanggan, item, qty) akan diimplementasikan berikutnya."
+      },
+      "detail": {
+        "title": "Detail Pesanan",
+        "orderId": "ID Pesanan: {id}",
+        "unauthorized": "Tidak diizinkan",
+        "createdAt": "Dibuat Pada",
+        "createdBy": "Dibuat Oleh",
+        "notes": "Catatan",
+        "emptyNotes": "Tidak ada catatan",
+        "timelineTitle": "Timeline Status",
+        "lineItemsTitle": "Item Pesanan",
+        "qty": "Qty",
+        "unitPrice": "Harga Satuan",
+        "discount": "Diskon (%)",
+        "discountAmount": "Jumlah Diskon",
+        "summaryTitle": "Ringkasan",
+        "subtotal": "Subtotal",
+        "discountTotal": "Total Diskon",
+        "ppn": "PPN",
+        "grandTotal": "Grand Total",
+        "backToOrders": "Kembali ke Pesanan"
+      },
+      "form": {
+        "title": "Buat Pesanan Penjualan",
+        "customerSection": {
+          "title": "Pelanggan",
+          "customerLabel": "Pelanggan",
+          "customerPlaceholder": "Pilih pelanggan",
+          "notesLabel": "Catatan",
+          "includePpn": "Termasuk PPN"
+        },
+        "linesSection": {
+          "title": "Item",
+          "add": "Tambah",
+          "empty": "Belum ada item",
+          "lineNumber": "Baris #{index}",
+          "productLabel": "Produk",
+          "productPlaceholder": "Pilih produk",
+          "qtyLabel": "Qty",
+          "unitPriceLabel": "Harga Satuan",
+          "discountTypeLabel": "Tipe Diskon",
+          "discountValueLabel": "Nilai Diskon",
+          "discountTypes": {
+            "percent": "Persen (%)",
+            "amount": "Nominal (Rp)"
+          },
+          "priceOverride": "Override harga",
+          "lineTotal": "Total Baris"
+        },
+        "summary": {
+          "title": "Ringkasan",
+          "itemsTotal": "Total item",
+          "discount": "Diskon",
+          "subtotal": "Subtotal",
+          "ppn": "PPN",
+          "grandTotal": "Grand Total"
+        },
+        "submit": "Buat Pesanan",
+        "submitting": "Mengirim...",
+        "success": "Pesanan berhasil dibuat",
+        "errors": {
+          "customerRequired": "Silakan pilih pelanggan",
+          "invalidOrderLines": "Item pesanan tidak valid",
+          "createOrderFailed": "Gagal membuat pesanan"
+        },
+        "draft": {
+          "restored": "Draf dipulihkan dari sesi sebelumnya.",
+          "clear": "Hapus draf",
+          "cleared": "Draf dihapus."
+        }
+      }
+    }
   }
 }

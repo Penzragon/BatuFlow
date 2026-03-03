@@ -3,11 +3,11 @@ import { getCurrentUser, getClientIp } from "@/lib/auth-utils";
 import { SalesOrderService } from "@/services/sales-order.service";
 
 export const GET = apiHandler(async (_req, context) => {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { id } = (context as { params: Promise<{ id: string }> }).params
     ? await (context as { params: Promise<{ id: string }> }).params
     : { id: "" };
-  const so = await SalesOrderService.getSO(id);
+  const so = await SalesOrderService.getSO(id, { id: user.id, role: user.role });
   return successResponse(so);
 });
 

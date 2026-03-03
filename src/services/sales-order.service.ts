@@ -100,6 +100,28 @@ export class SalesOrderService {
     const parsed = createSOSchema.parse(data);
     const soNumber = await SalesOrderService.generateSONumber();
 
+    const customer = await prisma.customer.findUnique({
+      where: { id: parsed.customerId },
+      select: { id: true, salespersonId: true, deletedAt: true, isActive: true },
+    });
+    if (!customer || customer.deletedAt || !customer.isActive) {
+      throw new Error("Customer not found");
+    }
+
+    if (userRole === "STAFF" && customer.salespersonId !== userId) {
+      throw new Error("Customer not found");
+    }
+
+    if (parsed.visitId) {
+      const visit = await prisma.customerVisit.findUnique({
+        where: { id: parsed.visitId },
+        select: { customerId: true, salespersonId: true },
+      });
+      if (!visit || visit.customerId !== parsed.customerId || visit.salespersonId !== userId) {
+        throw new Error("Visit not found");
+      }
+    }
+
     let needsApproval = false;
     let approvalReason = "";
     const lineData = [];
@@ -460,7 +482,7 @@ export class SalesOrderService {
   /**
    * Gets a single SO with lines, customer, visit info.
    */
-  static async getSO(id: string) {
+  static async getSO(id: string, viewer?: { id: string; role: string }) {
     const so = await prisma.salesOrder.findUnique({
       where: { id },
       include: {
@@ -475,6 +497,11 @@ export class SalesOrderService {
       },
     });
     if (!so) throw new Error("Sales order not found");
+
+    if (viewer?.role === "STAFF" && so.createdBy !== viewer.id) {
+      throw new Error("Sales order not found");
+    }
+
     return so;
   }
 
