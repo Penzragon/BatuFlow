@@ -19,6 +19,7 @@ export const createDOSchema = z.object({
 interface DOListParams extends PaginationParams {
   salesOrderId?: string;
   status?: string;
+  viewer?: { id: string; role: string };
 }
 
 /**
@@ -26,6 +27,33 @@ interface DOListParams extends PaginationParams {
  * confirmation with stock ledger reduction, and parent SO status updates.
  */
 export class DeliveryOrderService {
+  private static applyStaffScope(where: Record<string, unknown>, viewer?: { id: string; role: string }) {
+    if (viewer?.role !== "STAFF") return;
+    where.OR = [
+      { salesOrder: { createdBy: viewer.id } },
+      { salesOrder: { customer: { salespersonId: viewer.id } } },
+    ];
+  }
+
+  private static assertStaffCanAccessSalesOrder(
+    salesOrder: { createdBy: string; customer?: { salespersonId: string | null } | null },
+    viewer: { id: string; role: string }
+  ) {
+    if (viewer.role !== "STAFF") return;
+    const allowed = salesOrder.createdBy === viewer.id || salesOrder.customer?.salespersonId === viewer.id;
+    if (!allowed) throw new Error("Sales order not found");
+  }
+
+  private static assertStaffCanAccessDO(
+    deliveryOrder: { salesOrder: { createdBy: string; customer?: { salespersonId: string | null } | null } },
+    viewer: { id: string; role: string }
+  ) {
+    if (viewer.role !== "STAFF") return;
+    const allowed =
+      deliveryOrder.salesOrder.createdBy === viewer.id ||
+      deliveryOrder.salesOrder.customer?.salespersonId === viewer.id;
+    if (!allowed) throw new Error("Delivery order not found");
+  }
   /**
    * Generates the next sequential DO number formatted as DO-YYYY-NNNNN.
    */
@@ -56,6 +84,7 @@ export class DeliveryOrderService {
     const so = await prisma.salesOrder.findUnique({
       where: { id: parsed.salesOrderId },
       include: {
+        customer: { select: { salespersonId: true } },
         lines: true,
         deliveryOrders: {
           where: { deletedAt: null },
@@ -64,6 +93,7 @@ export class DeliveryOrderService {
       },
     });
     if (!so) throw new Error("Sales order not found");
+    DeliveryOrderService.assertStaffCanAccessSalesOrder(so, { id: userId, role: userRole });
     if (!["CONFIRMED", "PARTIALLY_DELIVERED"].includes(so.status)) {
       throw new Error("Sales order must be confirmed before creating a delivery order");
     }
@@ -135,9 +165,18 @@ export class DeliveryOrderService {
   ): Promise<DeliveryOrder> {
     const deliveryOrder = await prisma.deliveryOrder.findUnique({
       where: { id },
-      include: { lines: true, salesOrder: { include: { lines: true } } },
+      include: {
+        lines: true,
+        salesOrder: {
+          include: {
+            lines: true,
+            customer: { select: { salespersonId: true } },
+          },
+        },
+      },
     });
     if (!deliveryOrder) throw new Error("Delivery order not found");
+    DeliveryOrderService.assertStaffCanAccessDO(deliveryOrder, { id: userId, role: userRole });
     if (deliveryOrder.status !== "DRAFT") throw new Error("Only draft delivery orders can be confirmed");
 
     const defaultWarehouse = await prisma.warehouse.findFirst({
@@ -242,13 +281,19 @@ export class DeliveryOrderService {
   /**
    * Gets a single DO with all related data.
    */
-  static async getDO(id: string) {
+  static async getDO(id: string, viewer?: { id: string; role: string }) {
     const deliveryOrder = await prisma.deliveryOrder.findUnique({
       where: { id },
       include: {
         lines: { include: { product: { select: { id: true, name: true, sku: true } } } },
         salesOrder: {
-          select: { id: true, soNumber: true, customerId: true, customer: { select: { id: true, name: true } } },
+          select: {
+            id: true,
+            soNumber: true,
+            customerId: true,
+            createdBy: true,
+            customer: { select: { id: true, name: true, salespersonId: true } },
+          },
         },
         creator: { select: { id: true, name: true } },
         invoices: {
@@ -258,6 +303,7 @@ export class DeliveryOrderService {
       },
     });
     if (!deliveryOrder) throw new Error("Delivery order not found");
+    if (viewer) DeliveryOrderService.assertStaffCanAccessDO(deliveryOrder, viewer);
     return deliveryOrder;
   }
 
@@ -265,18 +311,25 @@ export class DeliveryOrderService {
    * Returns paginated list of Delivery Orders with optional filters.
    */
   static async listDOs(params: DOListParams): Promise<PaginatedResponse<DeliveryOrder>> {
-    const { page, pageSize, search, salesOrderId, status } = params;
+    const { page, pageSize, search, salesOrderId, status, viewer } = params;
 
     const where: Record<string, unknown> = { deletedAt: null };
     if (salesOrderId) where.salesOrderId = salesOrderId;
     if (status) where.status = status;
     if (search) {
-      where.OR = [
-        { doNumber: { contains: search, mode: "insensitive" } },
-        { salesOrder: { soNumber: { contains: search, mode: "insensitive" } } },
-        { salesOrder: { customer: { name: { contains: search, mode: "insensitive" } } } },
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { doNumber: { contains: search, mode: "insensitive" } },
+            { salesOrder: { soNumber: { contains: search, mode: "insensitive" } } },
+            { salesOrder: { customer: { name: { contains: search, mode: "insensitive" } } } },
+          ],
+        },
       ];
     }
+
+    DeliveryOrderService.applyStaffScope(where, viewer);
 
     const [items, total] = await Promise.all([
       prisma.deliveryOrder.findMany({

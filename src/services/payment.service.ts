@@ -105,7 +105,31 @@ export class PaymentService {
   /**
    * Lists payments for a specific invoice.
    */
-  static async listPaymentsForInvoice(invoiceId: string): Promise<Payment[]> {
+  static async listPaymentsForInvoice(
+    invoiceId: string,
+    viewer?: { id: string; role: string }
+  ): Promise<Payment[]> {
+    if (viewer?.role === "STAFF") {
+      const invoice = await prisma.arInvoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          deliveryOrder: {
+            include: {
+              salesOrder: {
+                include: { customer: { select: { salespersonId: true } } },
+              },
+            },
+          },
+        },
+      });
+      if (!invoice) throw new Error("Invoice not found");
+
+      const allowed =
+        invoice.deliveryOrder?.salesOrder?.createdBy === viewer.id ||
+        invoice.deliveryOrder?.salesOrder?.customer?.salespersonId === viewer.id;
+      if (!allowed) throw new Error("Invoice not found");
+    }
+
     return prisma.payment.findMany({
       where: { invoiceId },
       orderBy: { paymentDate: "desc" },

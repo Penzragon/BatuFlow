@@ -4,7 +4,7 @@ import { parsePaginationParams } from "@/lib/api-utils";
 import { VisitService } from "@/services/visit.service";
 
 export const GET = apiHandler(async (req) => {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { searchParams } = new URL(req.url);
   const pagination = parsePaginationParams(searchParams);
 
@@ -14,6 +14,7 @@ export const GET = apiHandler(async (req) => {
     customerId: searchParams.get("customerId") ?? undefined,
     dateFrom: searchParams.get("dateFrom") ?? undefined,
     dateTo: searchParams.get("dateTo") ?? undefined,
+    viewer: { id: user.id, role: user.role },
   });
 
   return successResponse(result);
