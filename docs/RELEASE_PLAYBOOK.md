@@ -91,3 +91,18 @@ Kirim update ringkas ke stakeholder:
 - [ ] Pantau error rate, latency, dan kegagalan submit/update order.
 - [ ] Cek feedback dari tim Sales/Warehouse/Driver.
 - [ ] Jika ada isu berulang, eskalasi dan tentukan hotfix vs rollback.
+
+
+## 🚨 Mandatory Production Guardrail (Schema + Runtime)
+
+Before declaring a release healthy, confirm all of these:
+
+- [ ] If Prisma schema changed, run production migration first (`prisma migrate deploy` or approved SQL execute path).
+- [ ] Verify no schema drift by opening at least one affected runtime route in production.
+- [ ] For serverless runtime, avoid writing files to `public/` or app bundle paths.
+- [ ] Validate critical URL/port env parsing with safe fallbacks (no split-based parsing assumptions).
+- [ ] Capture live logs while reproducing high-risk routes (`/sales-mobile/dashboard`, `/settings/audit-trail`, etc.).
+
+Rollback trigger:
+- Runtime Prisma `P2022`/missing-column errors after deploy
+- Repeated worker init errors (e.g., invalid port/URL parse)
