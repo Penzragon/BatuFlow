@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Camera, MapPin, Clock, Plus } from "lucide-react";
+import { Camera, MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -29,21 +30,32 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 
 interface Visit {
   id: string;
   customerId: string;
   customer: { id: string; name: string };
   salesperson: { id: string; name: string };
+  status: "OPEN" | "CHECKED_OUT" | "STALE_OPEN";
   selfieUrl: string | null;
   gpsLatitude: number | null;
   gpsLongitude: number | null;
   gpsAccuracy: number | null;
   distanceFromCustomer: number | null;
   checkInAt: string;
+  checkoutAt: string | null;
+  checkoutLat: number | null;
+  checkoutLng: number | null;
+  checkoutPhotoPath: string | null;
   expiresAt: string;
   notes: string | null;
   _count: { salesOrders: number };
+  lifecycle?: {
+    status: "OPEN" | "CHECKED_OUT" | "STALE_OPEN" | null;
+    checkoutAt: string | null;
+    durationMinutes: number | null;
+  };
 }
 
 interface Customer {
@@ -51,14 +63,35 @@ interface Customer {
   name: string;
 }
 
+interface Salesperson {
+  id: string;
+  name: string;
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "-";
+  return format(new Date(value), "dd MMM yyyy HH:mm");
+}
+
+function formatDuration(minutes?: number | null) {
+  if (minutes == null) return "-";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export default function VisitsPage() {
   const t = useTranslations("visits");
   const tc = useTranslations("common");
+  const { data: session } = useSession();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [notes, setNotes] = useState("");
   const [selfieData, setSelfieData] = useState<string | null>(null);
@@ -66,6 +99,12 @@ export default function VisitsPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [distanceWarning, setDistanceWarning] = useState(false);
+
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [salespersonFilter, setSalespersonFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -73,7 +112,13 @@ export default function VisitsPage() {
   const fetchVisits = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/visits?pageSize=100");
+      const params = new URLSearchParams({ pageSize: "100" });
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (salespersonFilter !== "all") params.set("salespersonId", salespersonFilter);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+
+      const res = await fetch(`/api/visits?${params.toString()}`);
       const json = await res.json();
       if (json.success) setVisits(json.data.items);
     } catch {
@@ -81,7 +126,7 @@ export default function VisitsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter, salespersonFilter, dateFrom, dateTo]);
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -93,10 +138,30 @@ export default function VisitsPage() {
     }
   }, []);
 
+  const fetchSalespeople = useCallback(async () => {
+    if (session?.user?.role === "STAFF") return;
+
+    try {
+      const res = await fetch("/api/users?role=STAFF");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.success) setSalespeople(json.data.items ?? []);
+    } catch {
+      /* ignore */
+    }
+  }, [session?.user?.role]);
+
   useEffect(() => {
     fetchVisits();
+  }, [fetchVisits]);
+
+  useEffect(() => {
     fetchCustomers();
-  }, [fetchVisits, fetchCustomers]);
+  }, [fetchCustomers]);
+
+  useEffect(() => {
+    fetchSalespeople();
+  }, [fetchSalespeople]);
 
   const startCamera = async () => {
     try {
@@ -210,9 +275,27 @@ export default function VisitsPage() {
   const columns: ColumnDef<Visit>[] = useMemo(
     () => [
       {
+        id: "status",
+        header: t("status"),
+        cell: ({ row }) => {
+          const status = row.original.lifecycle?.status ?? row.original.status;
+          return <StatusBadge status={status} />;
+        },
+      },
+      {
         accessorKey: "checkInAt",
-        header: "Date",
-        cell: ({ row }) => format(new Date(row.original.checkInAt), "dd MMM yyyy HH:mm"),
+        header: t("checkInAt"),
+        cell: ({ row }) => formatDateTime(row.original.checkInAt),
+      },
+      {
+        id: "checkOutAt",
+        header: t("checkOutAt"),
+        cell: ({ row }) => formatDateTime(row.original.lifecycle?.checkoutAt ?? row.original.checkoutAt),
+      },
+      {
+        id: "duration",
+        header: t("duration"),
+        cell: ({ row }) => formatDuration(row.original.lifecycle?.durationMinutes),
       },
       {
         accessorKey: "salesperson.name",
@@ -223,6 +306,41 @@ export default function VisitsPage() {
         accessorKey: "customer.name",
         header: t("customer"),
         cell: ({ row }) => row.original.customer?.name ?? "-",
+      },
+      {
+        id: "gps",
+        header: t("gpsLocation"),
+        cell: ({ row }) => {
+          const { gpsLatitude: lat, gpsLongitude: lng } = row.original;
+          return lat && lng ? (
+            <span className="text-xs">{lat.toFixed(4)}, {lng.toFixed(4)}</span>
+          ) : "-";
+        },
+      },
+      {
+        id: "checkoutDetails",
+        header: t("checkoutDetails"),
+        cell: ({ row }) => {
+          const v = row.original;
+          const checkoutCoords = v.checkoutLat != null && v.checkoutLng != null
+            ? `${v.checkoutLat.toFixed(6)}, ${v.checkoutLng.toFixed(6)}`
+            : "-";
+
+          return (
+            <div className="space-y-1 text-xs leading-relaxed">
+              <div><span className="text-muted-foreground">GPS:</span> {checkoutCoords}</div>
+              <div><span className="text-muted-foreground">{t("notes")}:</span> {v.notes || "-"}</div>
+              <div>
+                <span className="text-muted-foreground">{t("photoPath")}:</span>{" "}
+                {v.checkoutPhotoPath ? (
+                  <a href={v.checkoutPhotoPath} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                    {v.checkoutPhotoPath}
+                  </a>
+                ) : "-"}
+              </div>
+            </div>
+          );
+        },
       },
       {
         id: "selfie",
@@ -237,24 +355,6 @@ export default function VisitsPage() {
           ) : (
             <span className="text-muted-foreground text-xs">-</span>
           ),
-      },
-      {
-        id: "gps",
-        header: t("gpsLocation"),
-        cell: ({ row }) => {
-          const { gpsLatitude: lat, gpsLongitude: lng } = row.original;
-          return lat && lng ? (
-            <span className="text-xs">{lat.toFixed(4)}, {lng.toFixed(4)}</span>
-          ) : "-";
-        },
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: ({ row }) => {
-          const expired = new Date(row.original.expiresAt) < new Date();
-          return <StatusBadge status={expired ? "expired" : "active"} />;
-        },
       },
       {
         id: "soCount",
@@ -277,7 +377,51 @@ export default function VisitsPage() {
         }
       />
 
-      <DataTable columns={columns} data={visits} isLoading={loading} />
+      <DataTable
+        columns={columns}
+        data={visits}
+        isLoading={loading}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t("status")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tc("viewAll")}</SelectItem>
+                <SelectItem value="OPEN">{t("statusOpen")}</SelectItem>
+                <SelectItem value="CHECKED_OUT">{t("statusCheckedOut")}</SelectItem>
+                <SelectItem value="STALE_OPEN">{t("statusStaleOpen")}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {session?.user?.role !== "STAFF" && (
+              <Select value={salespersonFilter} onValueChange={setSalespersonFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder={t("salesperson")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{tc("viewAll")}</SelectItem>
+                  {salespeople.map((sp) => (
+                    <SelectItem key={sp.id} value={sp.id}>{sp.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
+            <Button variant="outline" onClick={() => {
+              setStatusFilter("all");
+              setSalespersonFilter("all");
+              setDateFrom("");
+              setDateTo("");
+            }}>
+              {tc("reset")}
+            </Button>
+          </div>
+        }
+      />
 
       <Dialog open={checkInOpen} onOpenChange={(open) => !open && closeCheckIn()}>
         <DialogContent className="max-w-lg">
@@ -354,7 +498,7 @@ export default function VisitsPage() {
             )}
 
             <div>
-              <Label>Notes</Label>
+              <Label>{t("notes")}</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
           </div>

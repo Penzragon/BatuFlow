@@ -291,6 +291,32 @@ export class AuditService {
    * Logs an EXPORT action (who exported what report).
    * Uses entityType as entityId when no specific entity is involved.
    */
+  static async logEvent(params: {
+    userId: string;
+    userRole: string;
+    ipAddress?: string;
+    entityType: string;
+    entityId: string;
+    entityLabel?: string;
+    eventName: string;
+    metadata?: unknown;
+  }): Promise<void> {
+    await AuditService.enqueueOrWrite({
+      action: AuditAction.UPDATE,
+      userId: params.userId,
+      userRole: params.userRole,
+      ipAddress: params.ipAddress,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      entityLabel: params.entityLabel,
+      changes: [],
+      metadata: {
+        event_name: params.eventName,
+        ...(typeof params.metadata === "object" && params.metadata !== null ? params.metadata : { payload: params.metadata }),
+      },
+    });
+  }
+
   static async logExport(params: {
     userId: string;
     userRole: string;

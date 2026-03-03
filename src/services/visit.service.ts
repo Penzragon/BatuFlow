@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { AuditService } from "./audit.service";
 import { DEFAULT_CHECKIN_EXPIRY_HOURS, DEFAULT_GPS_DISTANCE_THRESHOLD } from "@/lib/constants";
 import type { PaginatedResponse, PaginationParams } from "@/types";
-import type { CustomerVisit } from "@prisma/client";
+import { GpsReasonCode, type CustomerVisit } from "@prisma/client";
 
 interface CheckInParams {
   customerId: string;
@@ -16,21 +16,33 @@ interface CheckInParams {
   ipAddress?: string;
 }
 
+interface CheckOutParams {
+  visitId: string;
+  actorUserId: string;
+  actorRole: string;
+  checkoutAt?: Date;
+  checkoutPhotoPath?: string;
+  checkoutNotes?: string;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  gpsAccuracy?: number;
+  gpsReasonCode?: GpsReasonCode;
+  overrideReason?: string;
+  ipAddress?: string;
+}
+
 interface VisitListParams extends PaginationParams {
   salespersonId?: string;
   customerId?: string;
+  status?: "OPEN" | "CHECKED_OUT" | "STALE_OPEN";
   dateFrom?: string;
   dateTo?: string;
   viewer?: { id: string; role: string };
 }
 
-/**
- * Calculates the Haversine distance between two GPS points in meters.
- */
-function haversineDistance(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number {
+const STALE_AFTER_HOURS = 12;
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -41,16 +53,7 @@ function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Handles visit check-in workflows including selfie watermarking,
- * GPS capture and distance validation, and visit expiry management.
- */
 export class VisitService {
-  /**
-   * Creates a visit check-in record. Processes selfie with watermark,
-   * calculates distance from the customer's registered GPS coordinates,
-   * and sets an expiry time based on system settings.
-   */
   static async checkIn(params: CheckInParams): Promise<CustomerVisit & { distanceWarning?: boolean }> {
     const {
       customerId, salespersonId, gpsLatitude, gpsLongitude,
@@ -91,6 +94,7 @@ export class VisitService {
       data: {
         customerId,
         salespersonId,
+        status: "OPEN",
         selfieUrl,
         gpsLatitude: gpsLatitude ?? null,
         gpsLongitude: gpsLongitude ?? null,
@@ -114,13 +118,179 @@ export class VisitService {
     return { ...visit, distanceWarning };
   }
 
-  /**
-   * Compresses and watermarks the selfie image with customer name + timestamp.
-   * Returns the relative path where the processed file is stored.
-   */
+  static async checkOut(params: CheckOutParams): Promise<CustomerVisit> {
+    const {
+      visitId,
+      actorUserId,
+      actorRole,
+      checkoutAt,
+      checkoutPhotoPath,
+      checkoutNotes,
+      gpsLatitude,
+      gpsLongitude,
+      gpsAccuracy,
+      gpsReasonCode,
+      overrideReason,
+      ipAddress,
+    } = params;
+
+    const visit = await prisma.customerVisit.findUnique({ where: { id: visitId } });
+    if (!visit) {
+      const err = new Error("Visit not found");
+      Object.assign(err, { status: 404 });
+      throw err;
+    }
+
+    const staleVisit = await VisitService.markVisitStaleIfNeeded(visit, actorUserId, actorRole, ipAddress);
+
+    if (staleVisit.status === "CHECKED_OUT" || staleVisit.checkoutAt) {
+      throw new Error("Visit already checked out");
+    }
+
+    const isOwner = staleVisit.salespersonId === actorUserId;
+    const isPrivileged = actorRole === "MANAGER" || actorRole === "ADMIN";
+    const isForceCheckout = !isOwner;
+
+    if (!isOwner && !isPrivileged) {
+      const err = new Error("Forbidden");
+      Object.assign(err, { status: 403 });
+      throw err;
+    }
+
+    if ((isForceCheckout || staleVisit.status === "STALE_OPEN") && !isPrivileged) {
+      const err = new Error("Forbidden");
+      Object.assign(err, { status: 403 });
+      throw err;
+    }
+
+    if ((isForceCheckout || staleVisit.status === "STALE_OPEN") && !overrideReason?.trim()) {
+      throw new Error("Override reason is required");
+    }
+
+    if (gpsLatitude == null || gpsLongitude == null) {
+      if (!gpsReasonCode) {
+        throw new Error("GPS reason code is required when GPS is unavailable");
+      }
+
+      await AuditService.logEvent({
+        userId: actorUserId,
+        userRole: actorRole,
+        ipAddress,
+        entityType: "CustomerVisit",
+        entityId: staleVisit.id,
+        entityLabel: `Visit ${staleVisit.id}`,
+        eventName: "VISIT_CHECKOUT_GPS_MISSING",
+        metadata: {
+          visit_id: staleVisit.id,
+          customer_id: staleVisit.customerId,
+          actor_user_id: actorUserId,
+          actor_role: actorRole,
+          event_time: new Date().toISOString(),
+          gps_reason_code: gpsReasonCode,
+        },
+      });
+    }
+
+    const updated = await prisma.customerVisit.update({
+      where: { id: staleVisit.id },
+      data: {
+        status: "CHECKED_OUT",
+        checkoutAt: checkoutAt ?? new Date(),
+        checkoutPhotoPath: checkoutPhotoPath ?? null,
+        checkoutLat: gpsLatitude ?? null,
+        checkoutLng: gpsLongitude ?? null,
+        checkoutAccuracy: gpsAccuracy ?? null,
+        gpsReasonCode: gpsReasonCode ?? null,
+        overrideBy: isForceCheckout || staleVisit.status === "STALE_OPEN" ? actorUserId : null,
+        overrideReason: isForceCheckout || staleVisit.status === "STALE_OPEN" ? overrideReason ?? null : null,
+        notes: checkoutNotes?.trim()
+          ? [staleVisit.notes, `Checkout: ${checkoutNotes.trim()}`].filter(Boolean).join("\n")
+          : undefined,
+      },
+    });
+
+    await AuditService.logUpdate({
+      userId: actorUserId,
+      userRole: actorRole,
+      ipAddress,
+      entityType: "CustomerVisit",
+      entityId: updated.id,
+      entityLabel: `Visit ${updated.id}`,
+      oldData: staleVisit as unknown as Record<string, unknown>,
+      newData: updated as unknown as Record<string, unknown>,
+      metadata: {
+        event_name: isForceCheckout ? "VISIT_CHECKOUT_FORCE" : "VISIT_CHECKOUT_SUCCESS",
+        visit_id: updated.id,
+        customer_id: updated.customerId,
+        actor_user_id: actorUserId,
+        actor_role: actorRole,
+        event_time: new Date().toISOString(),
+        before_status: staleVisit.status,
+        after_status: updated.status,
+        lat: updated.checkoutLat,
+        lng: updated.checkoutLng,
+        accuracy: updated.checkoutAccuracy,
+        gps_reason_code: updated.gpsReasonCode,
+        photo_path: updated.checkoutPhotoPath,
+        override_reason: updated.overrideReason,
+      },
+    });
+
+    return updated;
+  }
+
+  private static async markVisitStaleIfNeeded(
+    visit: CustomerVisit,
+    actorUserId: string,
+    actorRole: string,
+    ipAddress?: string
+  ): Promise<CustomerVisit> {
+    if (visit.status !== "OPEN" || visit.checkoutAt) {
+      return visit;
+    }
+
+    const staleThreshold = new Date(visit.checkInAt);
+    staleThreshold.setHours(staleThreshold.getHours() + STALE_AFTER_HOURS);
+
+    if (staleThreshold > new Date()) {
+      return visit;
+    }
+
+    const staleVisit = await prisma.customerVisit.update({
+      where: { id: visit.id },
+      data: {
+        status: "STALE_OPEN",
+        staleMarkedAt: new Date(),
+      },
+    });
+
+    await AuditService.logUpdate({
+      userId: actorUserId,
+      userRole: actorRole,
+      ipAddress,
+      entityType: "CustomerVisit",
+      entityId: staleVisit.id,
+      entityLabel: `Visit ${staleVisit.id}`,
+      oldData: visit as unknown as Record<string, unknown>,
+      newData: staleVisit as unknown as Record<string, unknown>,
+      metadata: {
+        event_name: "VISIT_MARKED_STALE",
+        visit_id: staleVisit.id,
+        customer_id: staleVisit.customerId,
+        actor_user_id: actorUserId,
+        actor_role: actorRole,
+        event_time: new Date().toISOString(),
+        before_status: visit.status,
+        after_status: staleVisit.status,
+      },
+    });
+
+    return staleVisit;
+  }
+
   static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { writeFile, mkdir } = await import("fs/promises");
+    const { mkdir } = await import("fs/promises");
     const path = await import("path");
 
     const uploadDir = path.join(process.cwd(), "public", "uploads", "visits");
@@ -154,18 +324,50 @@ export class VisitService {
     return `/uploads/visits/${filename}`;
   }
 
-  /**
-   * Finds the currently active (non-expired) visit for a salesperson at a customer.
-   */
-  static async getActiveVisit(
-    customerId: string,
-    salespersonId: string
-  ): Promise<CustomerVisit | null> {
+  static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
+    const sharp = (await import("sharp")).default;
+    const { mkdir, stat, rename } = await import("fs/promises");
+    const path = await import("path");
+
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits", "checkout", year, month);
+    await mkdir(uploadDir, { recursive: true });
+
+    const timestamp = now.toISOString().replace(/[:.]/g, "-");
+    const filename = `checkout-${timestamp}.jpg`;
+    const filepath = path.join(uploadDir, filename);
+
+    const watermarkText = `${now.toLocaleString("id-ID")} | ${actorUserId} | ${customerId}`;
+    const svgText = `<svg width="1000" height="60">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
+      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
+    </svg>`;
+
+    await sharp(buffer)
+      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+      .composite([{ input: Buffer.from(svgText), gravity: "south" }])
+      .jpeg({ quality: 80 })
+      .toFile(filepath);
+
+    const stats = await stat(filepath);
+    if (stats.size > 1024 * 1024) {
+      await sharp(filepath)
+        .jpeg({ quality: 60 })
+        .toFile(filepath + ".tmp");
+      await rename(filepath + ".tmp", filepath);
+    }
+
+    return `/uploads/visits/checkout/${year}/${month}/${filename}`;
+  }
+  static async getActiveVisit(customerId: string, salespersonId: string): Promise<CustomerVisit | null> {
     return prisma.customerVisit.findFirst({
       where: {
         customerId,
         salespersonId,
-        expiresAt: { gt: new Date() },
+        status: "OPEN",
+        checkoutAt: null,
       },
       orderBy: { checkInAt: "desc" },
       include: {
@@ -174,13 +376,8 @@ export class VisitService {
     });
   }
 
-  /**
-   * Returns paginated visit log with optional filters.
-   */
-  static async listVisits(
-    params: VisitListParams
-  ): Promise<PaginatedResponse<CustomerVisit>> {
-    const { page, pageSize, salespersonId, customerId, dateFrom, dateTo, search, viewer } = params;
+  static async listVisits(params: VisitListParams): Promise<PaginatedResponse<CustomerVisit>> {
+    const { page, pageSize, salespersonId, customerId, status, dateFrom, dateTo, search, viewer } = params;
 
     const where: Record<string, unknown> = {};
     if (viewer?.role === "STAFF") {
@@ -189,6 +386,7 @@ export class VisitService {
       where.salespersonId = salespersonId;
     }
     if (customerId) where.customerId = customerId;
+    if (status) where.status = status;
     if (dateFrom || dateTo) {
       where.checkInAt = {
         ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
@@ -218,7 +416,16 @@ export class VisitService {
     ]);
 
     return {
-      items: items as unknown as CustomerVisit[],
+      items: items.map((visit) => {
+        const durationMinutes = visit.checkoutAt
+          ? Math.max(0, Math.round((visit.checkoutAt.getTime() - visit.checkInAt.getTime()) / 60000))
+          : null;
+
+        return {
+          ...visit,
+          durationMinutes,
+        };
+      }) as unknown as CustomerVisit[],
       total,
       page,
       pageSize,
