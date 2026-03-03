@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { format } from "date-fns";
 
 import { auth } from "@/lib/auth";
 import { SalesOrderService } from "@/services/sales-order.service";
@@ -84,7 +85,7 @@ export default async function SalesOrderDetailPage({
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
           <div>
             <p className="text-muted-foreground">{t("createdAt")}</p>
-            <p className="font-medium">{new Date(so.createdAt).toLocaleString(locale)}</p>
+            <p className="font-medium">{format(new Date(so.createdAt), "dd MMM yyyy HH:mm")}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t("createdBy")}</p>

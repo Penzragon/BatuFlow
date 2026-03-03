@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { format } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -78,7 +79,7 @@ export default async function SalesOrdersPage() {
                   <p className="font-medium">{o.soNumber}</p>
                   <p className="text-xs text-muted-foreground">{o.customer.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {new Date(o.createdAt).toLocaleString(locale)}
+                    {format(new Date(o.createdAt), "dd MMM yyyy HH:mm")}
                   </p>
                 </div>
                 <div className="text-right">
