@@ -12,7 +12,7 @@ export default async function SalesDashboardPage() {
       <SalesDashboardKpi />
 
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quick Actions</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("quickActions")}</p>
         <div className="grid grid-cols-1 gap-2">
           <Link href="/sales-mobile/visits/new" className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/70 p-3 shadow-sm transition hover:bg-blue-100/70">
             <div className="flex items-center gap-3">

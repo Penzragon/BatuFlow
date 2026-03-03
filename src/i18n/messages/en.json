@@ -1233,6 +1233,7 @@
     "dashboard": {
       "title": "Sales Dashboard",
       "subtitle": "Welcome to Sales App v1. Start with visit check-in or create an order.",
+      "quickActions": "Quick Actions",
       "cards": {
         "newCheckIn": {
           "title": "New Check-in",

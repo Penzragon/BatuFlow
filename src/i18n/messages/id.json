@@ -1203,6 +1203,7 @@
     "dashboard": {
       "title": "Dashboard Sales",
       "subtitle": "Selamat datang di Sales App v1. Mulai dari check-in kunjungan atau buat pesanan.",
+      "quickActions": "Aksi Cepat",
       "cards": {
         "newCheckIn": {
           "title": "Check-in Baru",
