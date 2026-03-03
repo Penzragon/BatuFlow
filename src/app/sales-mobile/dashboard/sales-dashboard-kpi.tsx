@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { CircleDollarSign, ClipboardCheck, Clock3, FileWarning, ShoppingCart } from "lucide-react";
 
 type DashboardKpi = {
   todayVisits: number;
@@ -73,7 +75,7 @@ export default function SalesDashboardKpi() {
         <p className="text-sm text-muted-foreground">{t("kpi.loading")}</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg border bg-muted/30" />
+            <div key={i} className="h-24 animate-pulse rounded-xl border bg-muted/30" />
           ))}
         </div>
       </div>
@@ -89,30 +91,45 @@ export default function SalesDashboardKpi() {
       key: "todayVisits",
       label: t("kpi.todayVisits"),
       value: numberFormatter.format(data.todayVisits),
+      icon: ClipboardCheck,
+      href: "/sales-mobile/visits/new",
+      iconClass: "text-blue-600",
       warning: false,
     },
     {
       key: "ordersToday",
       label: t("kpi.ordersToday"),
       value: numberFormatter.format(data.ordersToday),
+      icon: ShoppingCart,
+      href: "/sales-mobile/orders",
+      iconClass: "text-primary",
       warning: false,
     },
     {
       key: "todayRevenue",
       label: t("kpi.todayRevenue"),
       value: currencyFormatter.format(data.todayRevenue),
+      icon: CircleDollarSign,
+      href: "/sales-mobile/orders",
+      iconClass: "text-green-600",
       warning: false,
     },
     {
       key: "pendingOrders",
       label: t("kpi.pendingOrders"),
       value: numberFormatter.format(data.pendingOrders),
+      icon: Clock3,
+      href: "/sales-mobile/orders",
+      iconClass: "text-amber-600",
       warning: false,
     },
     {
       key: "overdueInvoices",
       label: t("kpi.overdueInvoices"),
       value: numberFormatter.format(data.overdueInvoices),
+      icon: FileWarning,
+      href: "/sales/invoices/aging",
+      iconClass: data.overdueInvoices > 0 ? "text-red-600" : "text-muted-foreground",
       warning: data.overdueInvoices > 0,
     },
   ];
@@ -127,18 +144,27 @@ export default function SalesDashboardKpi() {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {cards.map((card) => (
-          <div
-            key={card.key}
-            className={[
-              "rounded-lg border p-3",
-              card.warning ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200" : "",
-            ].join(" ")}
-          >
-            <p className="text-xs text-muted-foreground">{card.label}</p>
-            <p className="mt-1 text-lg font-semibold leading-tight">{card.value}</p>
-          </div>
-        ))}
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link
+              key={card.key}
+              href={card.href}
+              className={[
+                "rounded-xl border bg-card p-3 shadow-sm transition-colors hover:bg-accent",
+                card.warning
+                  ? "border-red-300 bg-red-50/70 dark:border-red-700 dark:bg-red-950/30"
+                  : "",
+              ].join(" ")}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs text-muted-foreground">{card.label}</p>
+                <Icon size={16} className={card.iconClass} />
+              </div>
+              <p className="mt-2 text-lg font-semibold leading-tight">{card.value}</p>
+            </Link>
+          );
+        })}
       </div>
 
       {isEmpty && <p className="text-sm text-muted-foreground">{t("kpi.empty")}</p>}
