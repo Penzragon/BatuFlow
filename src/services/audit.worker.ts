@@ -4,6 +4,30 @@ import { AuditService } from "./audit.service";
 
 const QUEUE_NAME = "audit-log";
 
+function resolveRedisConnection() {
+  const raw = process.env.REDIS_URL;
+
+  if (!raw) {
+    return { host: "localhost", port: 6379 };
+  }
+
+  try {
+    const url = new URL(raw);
+    const host = url.hostname || "localhost";
+    const port = Number.parseInt(url.port || "6379", 10);
+
+    if (!Number.isInteger(port) || port < 0 || port > 65535) {
+      console.warn(`[AuditWorker] Invalid REDIS_URL port '${url.port}'. Falling back to 6379.`);
+      return { host, port: 6379 };
+    }
+
+    return { host, port };
+  } catch {
+    console.warn("[AuditWorker] REDIS_URL is not a valid URL. Falling back to localhost:6379.");
+    return { host: "localhost", port: 6379 };
+  }
+}
+
 interface AuditJobData {
   action: string;
   userId: string;
@@ -46,8 +70,7 @@ export function startAuditWorker(): Worker<AuditJobData> {
     },
     {
       connection: {
-        host: process.env.REDIS_URL?.replace("redis://", "").split(":")[0] || "localhost",
-        port: parseInt(process.env.REDIS_URL?.split(":")[2] || "6379", 10),
+        ...resolveRedisConnection(),
         maxRetriesPerRequest: null,
       },
       concurrency: 5,
