@@ -1263,14 +1263,19 @@
         "refresh": "Muat ulang",
         "loading": "Mengambil GPS...",
         "accuracy": "Akurasi: ±{meters} m",
-        "notCaptured": "GPS belum terekam"
+        "notCaptured": "GPS belum terekam",
+        "retry": "Coba lagi GPS",
+        "retryHint": "Jika lokasi gagal, aktifkan izin Lokasi lalu tekan coba lagi.",
+        "softAccuracyWarning": "Akurasi GPS rendah (±{meters} m). Tetap bisa kirim, tapi pindah ke area terbuka lalu muat ulang untuk akurasi lebih baik."
       },
       "photo": {
         "title": "Foto Selfie",
         "startCamera": "Mulai Kamera",
         "capture": "Ambil Foto",
         "retake": "Ambil Ulang",
-        "previewAlt": "Pratinjau selfie"
+        "previewAlt": "Pratinjau selfie",
+        "retryCamera": "Coba lagi Kamera",
+        "retryHint": "Jika kamera tidak terbuka, izinkan akses Kamera lalu coba lagi."
       },
       "errors": {
         "cameraAccess": "Tidak dapat mengakses kamera",
@@ -1278,12 +1283,16 @@
         "customerRequired": "Silakan pilih pelanggan",
         "gpsRequired": "GPS wajib diisi",
         "photoRequired": "Foto wajib diisi",
-        "failedCheckIn": "Check-in gagal"
+        "failedCheckIn": "Check-in gagal",
+        "cameraPermission": "Izin kamera diblokir. Izinkan akses kamera lalu coba lagi.",
+        "gpsPermission": "Izin lokasi diblokir. Aktifkan akses lokasi lalu coba lagi.",
+        "gpsTimeout": "GPS terlalu lama merespons. Pindah ke area terbuka lalu coba lagi."
       },
       "draft": {
         "restored": "Draf dipulihkan dari sesi sebelumnya.",
         "clear": "Hapus draf",
-        "cleared": "Draf dihapus."
+        "cleared": "Draf dihapus.",
+        "saveFailed": "Draf tidak dapat disimpan di perangkat ini. Anda tetap bisa lanjut dan kirim manual."
       }
     },
     "orders": {
@@ -1324,7 +1333,12 @@
         "discountTotal": "Total Diskon",
         "ppn": "PPN",
         "grandTotal": "Grand Total",
-        "backToOrders": "Kembali ke Pesanan"
+        "backToOrders": "Kembali ke Pesanan",
+        "statusTimestampHint": "Waktu Status",
+        "statusUpdatedAt": "Pembaruan Status Terakhir",
+        "approvedAt": "Disetujui Pada",
+        "rejectedAt": "Ditolak Pada",
+        "latestDeliveryOrderAt": "Pembaruan Pengiriman Terakhir"
       },
       "form": {
         "title": "Buat Pesanan Penjualan",
@@ -1372,7 +1386,8 @@
         "draft": {
           "restored": "Draf dipulihkan dari sesi sebelumnya.",
           "clear": "Hapus draf",
-          "cleared": "Draf dihapus."
+          "cleared": "Draf dihapus.",
+          "saveFailed": "Draf tidak dapat disimpan di perangkat ini. Anda tetap bisa lanjut dan kirim manual."
         }
       }
     }

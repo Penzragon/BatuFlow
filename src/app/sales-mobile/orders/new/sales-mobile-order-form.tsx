@@ -53,8 +53,10 @@ export default function SalesMobileOrderForm() {
   const [submitting, setSubmitting] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaveFailed, setDraftSaveFailed] = useState(false);
 
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftSaveErrorNotifiedRef = useRef(false);
 
   const fetchCustomers = useCallback(async () => {
     const res = await fetch("/api/customers?pageSize=200");
@@ -122,11 +124,19 @@ export default function SalesMobileOrderForm() {
       };
       try {
         localStorage.setItem(ORDER_DRAFT_KEY, JSON.stringify(draft));
+        if (draftSaveFailed) {
+          setDraftSaveFailed(false);
+        }
+        draftSaveErrorNotifiedRef.current = false;
       } catch {
-        // ignore localStorage errors
+        setDraftSaveFailed(true);
+        if (!draftSaveErrorNotifiedRef.current) {
+          toast.error(t("draft.saveFailed"));
+          draftSaveErrorNotifiedRef.current = true;
+        }
       }
     }, 350);
-  }, [customerId, notes, includePpn, lines, draftReady]);
+  }, [customerId, notes, includePpn, lines, draftReady, draftSaveFailed, t]);
 
   useEffect(() => {
     if (!customerId) {
@@ -261,6 +271,12 @@ export default function SalesMobileOrderForm() {
             <Trash2 className="mr-1 h-3.5 w-3.5" />
             {t("draft.clear")}
           </Button>
+        </div>
+      )}
+
+      {draftSaveFailed && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+          {t("draft.saveFailed")}
         </div>
       )}
 
