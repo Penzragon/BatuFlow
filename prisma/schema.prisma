@@ -302,18 +302,28 @@ enum StockMovementType {
 // ─────────────────────────────────────────────
 
 model CustomerVisit {
-  id            String    @id @default(uuid())
-  customerId    String    @map("customer_id")
-  salespersonId String    @map("salesperson_id")
-  selfieUrl     String?   @map("selfie_url")
-  gpsLatitude   Float?    @map("gps_latitude")
-  gpsLongitude  Float?    @map("gps_longitude")
-  gpsAccuracy   Float?    @map("gps_accuracy")
-  distanceFromCustomer Float? @map("distance_from_customer")
-  checkInAt     DateTime  @default(now()) @map("check_in_at")
-  expiresAt     DateTime  @map("expires_at")
-  notes         String?
-  createdAt     DateTime  @default(now()) @map("created_at")
+  id                   String         @id @default(uuid())
+  customerId           String         @map("customer_id")
+  salespersonId        String         @map("salesperson_id")
+  status               VisitStatus    @default(OPEN)
+  selfieUrl            String?        @map("selfie_url")
+  gpsLatitude          Float?         @map("gps_latitude")
+  gpsLongitude         Float?         @map("gps_longitude")
+  gpsAccuracy          Float?         @map("gps_accuracy")
+  distanceFromCustomer Float?         @map("distance_from_customer")
+  checkInAt            DateTime       @default(now()) @map("check_in_at")
+  checkoutAt           DateTime?      @map("checkout_at")
+  checkoutPhotoPath    String?        @map("checkout_photo_path")
+  checkoutLat          Float?         @map("checkout_lat")
+  checkoutLng          Float?         @map("checkout_lng")
+  checkoutAccuracy     Float?         @map("checkout_accuracy")
+  gpsReasonCode        GpsReasonCode? @map("gps_reason_code")
+  overrideBy           String?        @map("override_by")
+  overrideReason       String?        @map("override_reason")
+  staleMarkedAt        DateTime?      @map("stale_marked_at")
+  expiresAt            DateTime       @map("expires_at")
+  notes                String?
+  createdAt            DateTime       @default(now()) @map("created_at")
 
   customer    Customer     @relation(fields: [customerId], references: [id])
   salesperson User         @relation(fields: [salespersonId], references: [id])
@@ -321,7 +331,26 @@ model CustomerVisit {
 
   @@index([salespersonId, customerId])
   @@index([checkInAt])
+  @@index([checkoutAt])
+  @@index([status])
   @@map("customer_visits")
+}
+
+enum VisitStatus {
+  OPEN
+  CHECKED_OUT
+  STALE_OPEN
+
+  @@map("visit_status")
+}
+
+enum GpsReasonCode {
+  GPS_DENIED
+  GPS_TIMEOUT
+  DEVICE_ERROR
+  NO_SIGNAL
+
+  @@map("gps_reason_code")
 }
 
 model SalesOrder {
