@@ -79,3 +79,44 @@ Focus: server-side role/ownership checks for STAFF data scoping.
 ## Notes
 - This report is based on code-path inspection of API routes and service methods in current branch.
 - No production code changes were made in this audit run.
+
+## Remediation Update (2026-03-03)
+
+### Implemented P0 scope fixes
+
+- **sales-orders**
+  - Added STAFF object-scope enforcement in service layer for `listSOs`, `updateSO`, `confirmSO`, `cancelSO`, and aligned `getSO` with canonical access rule:
+    - allowed when `createdBy === staff.id` **or** `customer.salespersonId === staff.id`.
+  - Route list endpoint now passes viewer context into service.
+
+- **delivery-orders**
+  - Added STAFF scope enforcement in service layer for `listDOs`, `getDO`, `createDO`, and `confirmDO` using linked SO/customer ownership.
+  - Route list/get endpoints now pass viewer context into service.
+
+- **invoices**
+  - Added STAFF scope enforcement in service layer for `listInvoices`, `getInvoice`, `createInvoice`, `issueInvoice` using linked DO -> SO/customer ownership.
+  - Added STAFF scope enforcement for invoice payments listing via `PaymentService.listPaymentsForInvoice`.
+  - Restricted `getAgingReport` to `ADMIN/MANAGER` with explicit 403.
+  - Route list/get/payments/aging endpoints now pass viewer context.
+
+- **visits**
+  - Added STAFF scope enforcement in service layer for `listVisits`; STAFF is hard-scoped to own `salespersonId` regardless of query param.
+  - Route list endpoint now passes viewer context.
+
+### 403/404 behavior
+
+- For STAFF unauthorized object access in SO/DO/Invoice/Payment object reads and state transitions, service returns **not found** style errors to avoid object existence leakage.
+- For restricted portfolio-level report (`/api/invoices/aging`), service returns explicit **403 Forbidden** for non `ADMIN/MANAGER`.
+
+### Regression coverage added
+
+- New focused tests in `src/services/__tests__/scope-enforcement.service.test.ts`:
+  - staff scope filter applied on SO listing
+  - visit list forced to own salespersonId for STAFF
+  - aging report denied for STAFF (403)
+  - unauthorized DO access hidden as not found
+
+### Remaining risks / follow-up
+
+- Route-layer error mapping still defaults plain `Error` to 500 unless status is attached. Most scope-deny paths intentionally use not-found errors for leakage resistance, but broader API error normalization (e.g., explicit 404 for all not-found errors) can still be improved globally.
+- `sales-mobile` and non-P0 adjacent reporting surfaces should be re-audited for the same viewer-context pattern drift as part of P1/P2.
