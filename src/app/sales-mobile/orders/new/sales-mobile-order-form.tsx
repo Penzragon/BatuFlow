@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -29,6 +29,16 @@ type Line = {
   uom: string;
 };
 
+type OrderDraft = {
+  version: 1;
+  customerId: string;
+  notes: string;
+  includePpn: boolean;
+  lines: Line[];
+};
+
+const ORDER_DRAFT_KEY = "batuflow:sales-mobile:order-draft:v1";
+
 export default function SalesMobileOrderForm() {
   const router = useRouter();
   const t = useTranslations("salesMobile.orders.form");
@@ -41,6 +51,10 @@ export default function SalesMobileOrderForm() {
   const [includePpn, setIncludePpn] = useState(true);
   const [lines, setLines] = useState<Line[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchCustomers = useCallback(async () => {
     const res = await fetch("/api/customers?pageSize=200");
@@ -63,7 +77,56 @@ export default function SalesMobileOrderForm() {
   useEffect(() => {
     fetchCustomers();
     fetchProducts();
+
+    return () => {
+      if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    };
   }, [fetchCustomers, fetchProducts]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ORDER_DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+      const parsed = JSON.parse(raw) as OrderDraft;
+      if (parsed.version !== 1) {
+        setDraftReady(true);
+        return;
+      }
+
+      setCustomerId(parsed.customerId || "");
+      setNotes(parsed.notes || "");
+      setIncludePpn(parsed.includePpn ?? true);
+      setLines(Array.isArray(parsed.lines) ? parsed.lines : []);
+      setDraftRestored(Boolean(parsed.customerId || parsed.notes || parsed.lines?.length));
+    } catch {
+      // ignore bad draft payload
+    } finally {
+      setDraftReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+
+    draftSaveTimerRef.current = setTimeout(() => {
+      const draft: OrderDraft = {
+        version: 1,
+        customerId,
+        notes,
+        includePpn,
+        lines,
+      };
+      try {
+        localStorage.setItem(ORDER_DRAFT_KEY, JSON.stringify(draft));
+      } catch {
+        // ignore localStorage errors
+      }
+    }, 350);
+  }, [customerId, notes, includePpn, lines, draftReady]);
 
   useEffect(() => {
     if (!customerId) {
@@ -81,6 +144,20 @@ export default function SalesMobileOrderForm() {
       }
     })();
   }, [customerId]);
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(ORDER_DRAFT_KEY);
+    } catch {
+      // no-op
+    }
+    setCustomerId("");
+    setNotes("");
+    setIncludePpn(true);
+    setLines([]);
+    setDraftRestored(false);
+    toast.success(t("draft.cleared"));
+  };
 
   const addLine = () => {
     setLines((prev) => [
@@ -159,6 +236,11 @@ export default function SalesMobileOrderForm() {
         return;
       }
 
+      try {
+        localStorage.removeItem(ORDER_DRAFT_KEY);
+      } catch {
+        // no-op
+      }
       toast.success(t("success"));
       router.push(`/sales-mobile/orders/${json.data.id}`);
     } catch {
@@ -171,6 +253,16 @@ export default function SalesMobileOrderForm() {
   return (
     <div className="space-y-4 p-4">
       <h1 className="text-lg font-semibold">{t("title")}</h1>
+
+      {draftRestored && (
+        <div className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <span>{t("draft.restored")}</span>
+          <Button variant="outline" size="sm" onClick={clearDraft}>
+            <Trash2 className="mr-1 h-3.5 w-3.5" />
+            {t("draft.clear")}
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader><CardTitle className="text-base">{t("customerSection.title")}</CardTitle></CardHeader>

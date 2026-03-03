@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Camera, MapPin, RotateCcw } from "lucide-react";
+import { Camera, MapPin, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface CustomerOption {
@@ -11,6 +11,15 @@ interface CustomerOption {
   name: string;
   address: string | null;
 }
+
+type VisitDraft = {
+  version: 1;
+  customerId: string;
+  notes: string;
+  selfieData: string | null;
+};
+
+const VISIT_DRAFT_KEY = "batuflow:sales-mobile:visit-checkin-draft:v1";
 
 export default function SalesVisitCheckInForm({
   customers,
@@ -28,15 +37,31 @@ export default function SalesVisitCheckInForm({
   const [selfieData, setSelfieData] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === customerId),
     [customers, customerId]
   );
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(VISIT_DRAFT_KEY);
+    } catch {
+      // no-op
+    }
+    setCustomerId(initialCustomerId ?? "");
+    setNotes("");
+    setSelfieData(null);
+    setDraftRestored(false);
+    toast.success(t("draft.cleared"));
+  };
 
   const startCamera = async () => {
     try {
@@ -94,8 +119,55 @@ export default function SalesVisitCheckInForm({
 
   useEffect(() => {
     captureGps();
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    };
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(VISIT_DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as VisitDraft;
+      if (parsed.version !== 1) {
+        setDraftReady(true);
+        return;
+      }
+
+      setCustomerId((prev) => prev || parsed.customerId || "");
+      setNotes(parsed.notes || "");
+      setSelfieData(parsed.selfieData || null);
+      setDraftRestored(Boolean(parsed.customerId || parsed.notes || parsed.selfieData));
+    } catch {
+      // ignore invalid draft format
+    } finally {
+      setDraftReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+
+    draftSaveTimerRef.current = setTimeout(() => {
+      const draft: VisitDraft = {
+        version: 1,
+        customerId,
+        notes,
+        selfieData,
+      };
+      try {
+        localStorage.setItem(VISIT_DRAFT_KEY, JSON.stringify(draft));
+      } catch {
+        // ignore quota/private mode errors
+      }
+    }, 350);
+  }, [customerId, notes, selfieData, draftReady]);
 
   const handleSubmit = async () => {
     if (!customerId) return toast.error(t("errors.customerRequired"));
@@ -123,6 +195,11 @@ export default function SalesVisitCheckInForm({
         throw new Error(json.error || t("errors.failedCheckIn"));
       }
 
+      try {
+        localStorage.removeItem(VISIT_DRAFT_KEY);
+      } catch {
+        // no-op
+      }
       toast.success(t("success"));
       router.push("/sales-mobile/dashboard");
       router.refresh();
@@ -139,6 +216,19 @@ export default function SalesVisitCheckInForm({
         <h1 className="text-lg font-semibold">{t("title")}</h1>
         <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {draftRestored && (
+        <div className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <span>{t("draft.restored")}</span>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className="inline-flex items-center gap-1 rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-100"
+          >
+            <Trash2 size={12} /> {t("draft.clear")}
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2">
         <label className="text-sm font-medium">{t("customerLabel")}</label>
