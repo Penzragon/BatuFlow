@@ -9,8 +9,6 @@ export default async function SalesDashboardPage() {
   return (
     <div className="space-y-4 p-4">
       <h1 className="text-lg font-semibold">{t("title")}</h1>
-      <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-
       <SalesDashboardKpi />
 
       <div className="space-y-2">
