@@ -1322,7 +1322,6 @@
         "restored": "Draft restored from your previous session.",
         "clear": "Clear draft",
         "cleared": "Draft cleared.",
-        "saveFailed": "Could not save draft on this device. You can continue, but draft auto-save is unavailable.",
         "saveFailed": "Draft could not be saved on this device. You can still continue and submit manually."
       }
     },
@@ -1413,7 +1412,7 @@
           "restored": "Draft restored from your previous session.",
           "clear": "Clear draft",
           "cleared": "Draft cleared.",
-          "saveFailed": "Could not save draft on this device. You can continue, but draft auto-save is unavailable."
+          "saveFailed": "Draft could not be saved on this device. You can still continue and submit manually."
         }
       }
     }

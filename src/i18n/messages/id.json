@@ -1292,7 +1292,6 @@
         "restored": "Draf dipulihkan dari sesi sebelumnya.",
         "clear": "Hapus draf",
         "cleared": "Draf dihapus.",
-        "saveFailed": "Tidak dapat menyimpan draf di perangkat ini. Anda bisa lanjut, tetapi simpan otomatis draf tidak tersedia.",
         "saveFailed": "Draf tidak dapat disimpan di perangkat ini. Anda tetap bisa lanjut dan kirim manual."
       }
     },
@@ -1383,7 +1382,7 @@
           "restored": "Draf dipulihkan dari sesi sebelumnya.",
           "clear": "Hapus draf",
           "cleared": "Draf dihapus.",
-          "saveFailed": "Tidak dapat menyimpan draf di perangkat ini. Anda bisa lanjut, tetapi simpan otomatis draf tidak tersedia."
+          "saveFailed": "Draf tidak dapat disimpan di perangkat ini. Anda tetap bisa lanjut dan kirim manual."
         }
       }
     }
