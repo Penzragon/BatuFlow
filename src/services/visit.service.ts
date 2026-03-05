@@ -295,76 +295,72 @@ export class VisitService {
 
   static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { mkdir } = await import("fs/promises");
-    const path = await import("path");
+    const now = new Date();
+    const watermarkText = `${customerName} | ${now.toLocaleString("id-ID")}`;
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits");
-    await mkdir(uploadDir, { recursive: true });
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `visit-${timestamp}.jpg`;
-    const filepath = path.join(uploadDir, filename);
-
-    const watermarkText = `${customerName} | ${new Date().toLocaleString("id-ID")}`;
     const svgText = `<svg width="800" height="60">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
+      <text x="10" y="40" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="24" fill="white">${escapeXml(watermarkText)}</text>
     </svg>`;
 
-    await sharp(buffer)
+    let quality = 80;
+    let processedBuffer = await sharp(buffer)
       .resize(800, 600, { fit: "inside", withoutEnlargement: true })
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
-      .jpeg({ quality: 80 })
-      .toFile(filepath);
+      .jpeg({ quality })
+      .toBuffer();
 
-    const stats = await import("fs/promises").then(fs => fs.stat(filepath));
-    if (stats.size > 1024 * 1024) {
-      await sharp(filepath)
-        .jpeg({ quality: 60 })
-        .toFile(filepath + ".tmp");
-      const { rename } = await import("fs/promises");
-      await rename(filepath + ".tmp", filepath);
+    while (processedBuffer.length > 1024 * 1024 && quality > 50) {
+      quality -= 10;
+      processedBuffer = await sharp(processedBuffer)
+        .jpeg({ quality })
+        .toBuffer();
     }
 
-    return `/uploads/visits/${filename}`;
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
   }
 
   static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { mkdir, stat, rename } = await import("fs/promises");
-    const path = await import("path");
-
     const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits", "checkout", year, month);
-    await mkdir(uploadDir, { recursive: true });
-
-    const timestamp = now.toISOString().replace(/[:.]/g, "-");
-    const filename = `checkout-${timestamp}.jpg`;
-    const filepath = path.join(uploadDir, filename);
-
     const watermarkText = `${now.toLocaleString("id-ID")} | ${actorUserId} | ${customerId}`;
+
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
     const svgText = `<svg width="1000" height="60">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
+      <text x="10" y="40" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="24" fill="white">${escapeXml(watermarkText)}</text>
     </svg>`;
 
-    await sharp(buffer)
+    let quality = 80;
+    let processedBuffer = await sharp(buffer)
       .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
-      .jpeg({ quality: 80 })
-      .toFile(filepath);
+      .jpeg({ quality })
+      .toBuffer();
 
-    const stats = await stat(filepath);
-    if (stats.size > 1024 * 1024) {
-      await sharp(filepath)
-        .jpeg({ quality: 60 })
-        .toFile(filepath + ".tmp");
-      await rename(filepath + ".tmp", filepath);
+    while (processedBuffer.length > 1024 * 1024 && quality > 50) {
+      quality -= 10;
+      processedBuffer = await sharp(processedBuffer)
+        .jpeg({ quality })
+        .toBuffer();
     }
 
-    return `/uploads/visits/checkout/${year}/${month}/${filename}`;
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
   }
   static async getActiveVisit(customerId: string, salespersonId: string): Promise<CustomerVisit | null> {
     return prisma.customerVisit.findFirst({
