@@ -68,6 +68,11 @@ export default function SalesVisitCheckInForm({
   };
 
   const startCamera = async () => {
+    if (!customerId) {
+      toast.error(t("errors.customerRequired"));
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
@@ -292,7 +297,13 @@ export default function SalesVisitCheckInForm({
         <select
           className="w-full rounded-md border bg-background p-2 text-sm"
           value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
+          onChange={(e) => {
+            const nextCustomerId = e.target.value;
+            if (nextCustomerId !== customerId && selfieData) {
+              setSelfieData(null);
+            }
+            setCustomerId(nextCustomerId);
+          }}
         >
           <option value="">{t("customerPlaceholder")}</option>
           {customers.map((c) => (
@@ -350,7 +361,8 @@ export default function SalesVisitCheckInForm({
                 <button
                   type="button"
                   onClick={startCamera}
-                  className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-accent"
+                  disabled={!customerId}
+                  className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Camera size={14} /> {cameraError ? t("photo.retryCamera") : t("photo.startCamera")}
                 </button>
@@ -365,7 +377,8 @@ export default function SalesVisitCheckInForm({
               )}
             </div>
             {cameraError && <p className="text-xs text-red-600">{cameraError}</p>}
-            {!cameraOn && !cameraError && <p className="text-xs text-muted-foreground">{t("photo.retryHint")}</p>}
+            {!customerId && <p className="text-xs text-amber-700">{t("errors.customerRequired")}</p>}
+            {!cameraOn && !cameraError && customerId && <p className="text-xs text-muted-foreground">{t("photo.retryHint")}</p>}
           </>
         ) : (
           <div className="space-y-2">
