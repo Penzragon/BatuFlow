@@ -78,6 +78,7 @@ export default function VisitDetailPage() {
   const [data, setData] = useState<VisitDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -197,21 +198,33 @@ export default function VisitDetailPage() {
               <div>
                 <p className="mb-1 text-muted-foreground">{t("selfie")}</p>
                 {data.selfieUrl ? (
-                  <img
-                    src={data.selfieUrl}
-                    alt={t("selfie")}
-                    className="h-48 w-full rounded border bg-muted/30 object-contain"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage({ src: data.selfieUrl as string, title: t("selfie") })}
+                    className="w-full"
+                  >
+                    <img
+                      src={data.selfieUrl}
+                      alt={t("selfie")}
+                      className="h-48 w-full rounded border bg-muted/30 object-contain"
+                    />
+                  </button>
                 ) : <p>-</p>}
               </div>
               <div>
                 <p className="mb-1 text-muted-foreground">{t("checkoutPhoto")}</p>
                 {data.checkoutPhotoPath ? (
-                  <img
-                    src={data.checkoutPhotoPath}
-                    alt={t("checkoutPhoto")}
-                    className="h-48 w-full rounded border bg-muted/30 object-contain"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage({ src: data.checkoutPhotoPath as string, title: t("checkoutPhoto") })}
+                    className="w-full"
+                  >
+                    <img
+                      src={data.checkoutPhotoPath}
+                      alt={t("checkoutPhoto")}
+                      className="h-48 w-full rounded border bg-muted/30 object-contain"
+                    />
+                  </button>
                 ) : <p>-</p>}
               </div>
             </div>
@@ -245,6 +258,17 @@ export default function VisitDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="max-h-[92vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
+            <img src={previewImage.src} alt={previewImage.title} className="max-h-[92vh] max-w-[92vw] rounded border bg-black object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

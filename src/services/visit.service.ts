@@ -313,10 +313,10 @@ export class VisitService {
     const metadata = await sharp(resizedBuffer).metadata();
     const imgWidth = Math.max(1, metadata.width ?? 800);
     const imgHeight = Math.max(1, metadata.height ?? 600);
-    const watermarkHeight = Math.min(Math.max(32, Math.round(imgWidth * 0.1)), imgHeight);
+    const watermarkHeight = Math.min(Math.max(56, Math.round(imgWidth * 0.16)), imgHeight);
 
-    const fontSize = Math.max(12, Math.round(imgWidth * 0.03));
-    const textY = Math.max(16, Math.min(watermarkHeight - 10, Math.round(watermarkHeight * 0.68)));
+    const fontSize = Math.max(16, Math.round(imgWidth * 0.045));
+    const textY = Math.max(22, Math.min(watermarkHeight - 12, Math.round(watermarkHeight * 0.72)));
 
     const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
@@ -359,10 +359,10 @@ export class VisitService {
     const metadata = await sharp(resizedBuffer).metadata();
     const imgWidth = Math.max(1, metadata.width ?? 1280);
     const imgHeight = Math.max(1, metadata.height ?? 1280);
-    const watermarkHeight = Math.min(Math.max(36, Math.round(imgWidth * 0.08)), imgHeight);
+    const watermarkHeight = Math.min(Math.max(56, Math.round(imgWidth * 0.12)), imgHeight);
 
-    const fontSize = Math.max(12, Math.round(imgWidth * 0.022));
-    const textY = Math.max(16, Math.min(watermarkHeight - 10, Math.round(watermarkHeight * 0.68)));
+    const fontSize = Math.max(16, Math.round(imgWidth * 0.03));
+    const textY = Math.max(22, Math.min(watermarkHeight - 12, Math.round(watermarkHeight * 0.72)));
 
     const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
       <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
