@@ -197,17 +197,21 @@ export default function VisitDetailPage() {
               <div>
                 <p className="mb-1 text-muted-foreground">{t("selfie")}</p>
                 {data.selfieUrl ? (
-                  <a href={data.selfieUrl} target="_blank" rel="noreferrer">
-                    <img src={data.selfieUrl} alt={t("selfie")} className="h-32 w-full rounded border object-cover" />
-                  </a>
+                  <img
+                    src={data.selfieUrl}
+                    alt={t("selfie")}
+                    className="h-48 w-full rounded border bg-muted/30 object-contain"
+                  />
                 ) : <p>-</p>}
               </div>
               <div>
                 <p className="mb-1 text-muted-foreground">{t("checkoutPhoto")}</p>
                 {data.checkoutPhotoPath ? (
-                  <a href={data.checkoutPhotoPath} target="_blank" rel="noreferrer">
-                    <img src={data.checkoutPhotoPath} alt={t("checkoutPhoto")} className="h-32 w-full rounded border object-cover" />
-                  </a>
+                  <img
+                    src={data.checkoutPhotoPath}
+                    alt={t("checkoutPhoto")}
+                    className="h-48 w-full rounded border bg-muted/30 object-contain"
+                  />
                 ) : <p>-</p>}
               </div>
             </div>
