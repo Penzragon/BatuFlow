@@ -296,7 +296,8 @@ export class VisitService {
   static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
     const now = new Date();
-    const watermarkText = `${customerName} | ${now.toLocaleString("id-ID")}`;
+    const customerLabel = toAsciiSafe(customerName || "CUSTOMER");
+    const watermarkText = `VISIT | ${customerLabel} | ${formatAsciiTimestamp(now)}`;
 
     const escapeXml = (value: string) =>
       value
@@ -342,7 +343,9 @@ export class VisitService {
   static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
     const sharp = (await import("sharp")).default;
     const now = new Date();
-    const watermarkText = `${now.toLocaleString("id-ID")} | ${actorUserId} | ${customerId}`;
+    const actorLabel = toAsciiSafe(actorUserId || "ACTOR", 24);
+    const customerLabel = toAsciiSafe(customerId || "CUSTOMER", 24);
+    const watermarkText = `CHECKOUT | ${formatAsciiTimestamp(now)} | ${actorLabel} | ${customerLabel}`;
 
     const escapeXml = (value: string) =>
       value
