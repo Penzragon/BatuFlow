@@ -104,6 +104,27 @@ export default function SalesVisitCheckInForm({
     if (!ctx) return;
 
     ctx.drawImage(videoRef.current, 0, 0);
+
+    // Client-side watermark to avoid server font rendering issues.
+    const ts = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const stamp = `${ts.getFullYear()}-${pad(ts.getMonth() + 1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())} WIB`;
+    const customerLabel = (selectedCustomer?.name || "CUSTOMER").slice(0, 28);
+    const line1 = `VISIT | ${customerLabel}`;
+    const line2 = stamp;
+
+    const barH = Math.max(42, Math.round(canvas.height * 0.14));
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    ctx.fillRect(0, canvas.height - barH, canvas.width, barH);
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = `${Math.max(14, Math.round(canvas.width * 0.034))}px Arial, sans-serif`;
+    ctx.fillText(line1, 10, canvas.height - Math.round(barH * 0.58));
+
+    ctx.fillStyle = "#FFD700";
+    ctx.font = `${Math.max(12, Math.round(canvas.width * 0.027))}px Arial, sans-serif`;
+    ctx.fillText(line2, 10, canvas.height - Math.round(barH * 0.18));
+
     setSelfieData(canvas.toDataURL("image/jpeg", 0.85));
     stopCamera();
   };

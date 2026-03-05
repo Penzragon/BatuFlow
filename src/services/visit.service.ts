@@ -306,42 +306,14 @@ export class VisitService {
     return staleVisit;
   }
 
-  static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
+  static async processSelfie(buffer: Buffer, _customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const now = new Date();
-    const customerLabel = toAsciiSafe(customerName || "CUSTOMER", 28) || "CUSTOMER";
-    const watermarkLine1 = `VISIT | ${customerLabel}`;
-    const watermarkLine2 = formatAsciiTimestamp(now);
 
-    const escapeXml = (value: string) =>
-      value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
-
-    const resizedBuffer = await sharp(buffer)
-      .resize(800, 600, { fit: "inside", withoutEnlargement: true })
-      .toBuffer();
-
-    const metadata = await sharp(resizedBuffer).metadata();
-    const imgWidth = Math.max(1, metadata.width ?? 800);
-    const imgHeight = Math.max(1, metadata.height ?? 600);
-    const watermarkHeight = Math.min(Math.max(48, Math.round(imgWidth * 0.1)), imgHeight);
-
-    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
-    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
-
-    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)"/>
-      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="#FFFFFF">${escapeXml(watermarkLine1)}</text>
-      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${escapeXml(watermarkLine2)}</text>
-    </svg>`;
-
+    // Watermark is applied client-side on sales-mobile check-in capture to avoid
+    // server runtime font/glyph rendering inconsistencies.
     let quality = 80;
-    let processedBuffer = await sharp(resizedBuffer)
-      .composite([{ input: Buffer.from(svgText), gravity: "south" }])
+    let processedBuffer = await sharp(buffer)
+      .resize(800, 600, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality })
       .toBuffer();
 
