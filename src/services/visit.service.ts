@@ -309,8 +309,9 @@ export class VisitService {
   static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
     const now = new Date();
-    const customerLabel = toAsciiSafe(customerName || "CUSTOMER");
-    const watermarkText = `VISIT | ${customerLabel} | ${formatAsciiTimestamp(now)}`;
+    const customerLabel = toAsciiSafe(customerName || "CUSTOMER", 28) || "CUSTOMER";
+    const watermarkLine1 = `VISIT | ${customerLabel}`;
+    const watermarkLine2 = formatAsciiTimestamp(now);
 
     const escapeXml = (value: string) =>
       value
@@ -327,14 +328,15 @@ export class VisitService {
     const metadata = await sharp(resizedBuffer).metadata();
     const imgWidth = Math.max(1, metadata.width ?? 800);
     const imgHeight = Math.max(1, metadata.height ?? 600);
-    const watermarkHeight = Math.min(Math.max(56, Math.round(imgWidth * 0.16)), imgHeight);
+    const watermarkHeight = Math.min(Math.max(48, Math.round(imgWidth * 0.1)), imgHeight);
 
-    const fontSize = Math.max(16, Math.round(imgWidth * 0.045));
-    const textY = Math.max(22, Math.min(watermarkHeight - 12, Math.round(watermarkHeight * 0.72)));
+    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
+    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
 
     const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
-      <text x="10" y="${textY}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize}" fill="white">${escapeXml(watermarkText)}</text>
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)"/>
+      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="#FFFFFF">${escapeXml(watermarkLine1)}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${escapeXml(watermarkLine2)}</text>
     </svg>`;
 
     let quality = 80;
@@ -356,9 +358,10 @@ export class VisitService {
   static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
     const sharp = (await import("sharp")).default;
     const now = new Date();
-    const actorLabel = toAsciiSafe(actorUserId || "ACTOR", 24);
-    const customerLabel = toAsciiSafe(customerId || "CUSTOMER", 24);
-    const watermarkText = `CHECKOUT | ${formatAsciiTimestamp(now)} | ${actorLabel} | ${customerLabel}`;
+    const actorLabel = toAsciiSafe(actorUserId || "ACTOR", 20) || "ACTOR";
+    const customerLabel = toAsciiSafe(customerId || "CUSTOMER", 20) || "CUSTOMER";
+    const watermarkLine1 = `CHECKOUT | ${customerLabel}`;
+    const watermarkLine2 = `${formatAsciiTimestamp(now)} | ${actorLabel}`;
 
     const escapeXml = (value: string) =>
       value
@@ -375,14 +378,15 @@ export class VisitService {
     const metadata = await sharp(resizedBuffer).metadata();
     const imgWidth = Math.max(1, metadata.width ?? 1280);
     const imgHeight = Math.max(1, metadata.height ?? 1280);
-    const watermarkHeight = Math.min(Math.max(56, Math.round(imgWidth * 0.12)), imgHeight);
+    const watermarkHeight = Math.min(Math.max(48, Math.round(imgWidth * 0.1)), imgHeight);
 
-    const fontSize = Math.max(16, Math.round(imgWidth * 0.03));
-    const textY = Math.max(22, Math.min(watermarkHeight - 12, Math.round(watermarkHeight * 0.72)));
+    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
+    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
 
     const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
-      <text x="10" y="${textY}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize}" fill="white">${escapeXml(watermarkText)}</text>
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)"/>
+      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="#FFFFFF">${escapeXml(watermarkLine1)}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${escapeXml(watermarkLine2)}</text>
     </svg>`;
 
     let quality = 80;
