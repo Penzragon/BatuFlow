@@ -381,6 +381,55 @@ export class VisitService {
     });
   }
 
+  static async getVisitById(id: string, viewer: { id: string; role: string }) {
+    const where: Record<string, unknown> = { id };
+    if (viewer.role === "STAFF") {
+      where.salespersonId = viewer.id;
+    }
+
+    const visit = await prisma.customerVisit.findFirst({
+      where,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            gpsLatitude: true,
+            gpsLongitude: true,
+          },
+        },
+        salesperson: { select: { id: true, name: true } },
+        salesOrders: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            soNumber: true,
+            status: true,
+            grandTotal: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      const err = new Error("Visit not found");
+      Object.assign(err, { status: 404 });
+      throw err;
+    }
+
+    const durationMinutes = visit.checkoutAt
+      ? Math.max(0, Math.round((visit.checkoutAt.getTime() - visit.checkInAt.getTime()) / 60000))
+      : null;
+
+    return {
+      ...visit,
+      durationMinutes,
+    };
+  }
+
   static async listVisits(params: VisitListParams): Promise<PaginatedResponse<CustomerVisit>> {
     const { page, pageSize, salespersonId, customerId, status, dateFrom, dateTo, search, viewer } = params;
 
