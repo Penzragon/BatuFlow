@@ -306,14 +306,25 @@ export class VisitService {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&apos;");
 
-    const svgText = `<svg width="800" height="60">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="24" fill="white">${escapeXml(watermarkText)}</text>
+    const resizedBuffer = await sharp(buffer)
+      .resize(800, 600, { fit: "inside", withoutEnlargement: true })
+      .toBuffer();
+
+    const metadata = await sharp(resizedBuffer).metadata();
+    const imgWidth = Math.max(1, metadata.width ?? 800);
+    const imgHeight = Math.max(1, metadata.height ?? 600);
+    const watermarkHeight = Math.min(Math.max(32, Math.round(imgWidth * 0.1)), imgHeight);
+
+    const fontSize = Math.max(12, Math.round(imgWidth * 0.03));
+    const textY = Math.max(16, Math.min(watermarkHeight - 10, Math.round(watermarkHeight * 0.68)));
+
+    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
+      <text x="10" y="${textY}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize}" fill="white">${escapeXml(watermarkText)}</text>
     </svg>`;
 
     let quality = 80;
-    let processedBuffer = await sharp(buffer)
-      .resize(800, 600, { fit: "inside", withoutEnlargement: true })
+    let processedBuffer = await sharp(resizedBuffer)
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({ quality })
       .toBuffer();
@@ -341,14 +352,25 @@ export class VisitService {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&apos;");
 
-    const svgText = `<svg width="1000" height="60">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="24" fill="white">${escapeXml(watermarkText)}</text>
+    const resizedBuffer = await sharp(buffer)
+      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+      .toBuffer();
+
+    const metadata = await sharp(resizedBuffer).metadata();
+    const imgWidth = Math.max(1, metadata.width ?? 1280);
+    const imgHeight = Math.max(1, metadata.height ?? 1280);
+    const watermarkHeight = Math.min(Math.max(36, Math.round(imgWidth * 0.08)), imgHeight);
+
+    const fontSize = Math.max(12, Math.round(imgWidth * 0.022));
+    const textY = Math.max(16, Math.min(watermarkHeight - 10, Math.round(watermarkHeight * 0.68)));
+
+    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
+      <text x="10" y="${textY}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize}" fill="white">${escapeXml(watermarkText)}</text>
     </svg>`;
 
     let quality = 80;
-    let processedBuffer = await sharp(buffer)
-      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+    let processedBuffer = await sharp(resizedBuffer)
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({ quality })
       .toBuffer();
