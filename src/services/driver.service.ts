@@ -238,58 +238,21 @@ export class DriverService {
   }
 
   /**
-   * Compresses and watermarks the proof photo with DO number, customer name,
-   * and timestamp. Returns a compressed data URL (suitable for Vercel).
+   * Compresses proof photo and returns a data URL (suitable for Vercel).
+   * Watermark is applied client-side in the driver UI to avoid server font/glyph issues.
    */
   static async processProofPhoto(
     buffer: Buffer,
-    doNumber: string,
-    customerName: string
+    _doNumber: string,
+    _customerName: string
   ): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("id-ID", {
-      day: "2-digit", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
 
-    // IMPORTANT: use dimensions from the resized output image.
-    // Using source metadata can make overlay larger than the composited image.
-    const resizedBuffer = await sharp(buffer)
+    const processedBuffer = await sharp(buffer)
       .resize(640, 480, {
         fit: "inside",
         withoutEnlargement: true,
       })
-      .toBuffer();
-
-    const metadata = await sharp(resizedBuffer).metadata();
-    const imgWidth = Math.max(1, metadata.width ?? 640);
-    const imgHeight = Math.max(1, metadata.height ?? 480);
-    const desiredWatermarkHeight = Math.max(32, Math.round(imgWidth * 0.1));
-    const watermarkHeight = Math.min(desiredWatermarkHeight, imgHeight);
-
-    const escapeXml = (value: string) =>
-      value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&apos;");
-
-    const watermarkLine1 = escapeXml(`${doNumber} | ${customerName}`);
-    const watermarkLine2 = escapeXml(dateStr);
-
-    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
-    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
-
-    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)"/>
-      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="white">${watermarkLine1}</text>
-      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${watermarkLine2}</text>
-    </svg>`;
-
-    const processedBuffer = await sharp(resizedBuffer)
-      .composite([{ input: Buffer.from(svgText), gravity: "south" }])
       .jpeg({
         quality: 70,
         mozjpeg: true,
@@ -298,7 +261,6 @@ export class DriverService {
       })
       .toBuffer();
 
-    // Store as data URL in the database so we don't need a writable filesystem (Vercel friendly).
     const base64 = processedBuffer.toString("base64");
     return `data:image/jpeg;base64,${base64}`;
   }

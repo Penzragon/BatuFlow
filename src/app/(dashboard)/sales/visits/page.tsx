@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Camera, MapPin, Plus } from "lucide-react";
+import { Camera, Eye, MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
@@ -360,6 +361,18 @@ export default function VisitsPage() {
         id: "soCount",
         header: t("sosCreated"),
         cell: ({ row }) => row.original._count?.salesOrders ?? 0,
+      },
+      {
+        id: "actions",
+        header: t("actions"),
+        cell: ({ row }) => (
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/sales/visits/${row.original.id}`}>
+              <Eye className="mr-1 h-4 w-4" />
+              {t("viewDetail")}
+            </Link>
+          </Button>
+        ),
       },
     ],
     [t]

@@ -42,6 +42,19 @@ interface VisitListParams extends PaginationParams {
 
 const STALE_AFTER_HOURS = 12;
 
+const formatAsciiTimestamp = (d: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())} WIB`;
+};
+
+const toAsciiSafe = (value: string, maxLen = 48) =>
+  value
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLen);
+
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -293,78 +306,75 @@ export class VisitService {
     return staleVisit;
   }
 
-  static async processSelfie(buffer: Buffer, customerName: string): Promise<string> {
+  static async processSelfie(buffer: Buffer, _customerName: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { mkdir } = await import("fs/promises");
-    const path = await import("path");
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits");
-    await mkdir(uploadDir, { recursive: true });
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `visit-${timestamp}.jpg`;
-    const filepath = path.join(uploadDir, filename);
-
-    const watermarkText = `${customerName} | ${new Date().toLocaleString("id-ID")}`;
-    const svgText = `<svg width="800" height="60">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
-    </svg>`;
-
-    await sharp(buffer)
+    // Watermark is applied client-side on sales-mobile check-in capture to avoid
+    // server runtime font/glyph rendering inconsistencies.
+    let quality = 80;
+    let processedBuffer = await sharp(buffer)
       .resize(800, 600, { fit: "inside", withoutEnlargement: true })
-      .composite([{ input: Buffer.from(svgText), gravity: "south" }])
-      .jpeg({ quality: 80 })
-      .toFile(filepath);
+      .jpeg({ quality })
+      .toBuffer();
 
-    const stats = await import("fs/promises").then(fs => fs.stat(filepath));
-    if (stats.size > 1024 * 1024) {
-      await sharp(filepath)
-        .jpeg({ quality: 60 })
-        .toFile(filepath + ".tmp");
-      const { rename } = await import("fs/promises");
-      await rename(filepath + ".tmp", filepath);
+    while (processedBuffer.length > 1024 * 1024 && quality > 50) {
+      quality -= 10;
+      processedBuffer = await sharp(processedBuffer)
+        .jpeg({ quality })
+        .toBuffer();
     }
 
-    return `/uploads/visits/${filename}`;
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
   }
 
   static async processCheckoutPhoto(buffer: Buffer, actorUserId: string, customerId: string): Promise<string> {
     const sharp = (await import("sharp")).default;
-    const { mkdir, stat, rename } = await import("fs/promises");
-    const path = await import("path");
-
     const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "visits", "checkout", year, month);
-    await mkdir(uploadDir, { recursive: true });
+    const actorLabel = toAsciiSafe(actorUserId || "ACTOR", 20) || "ACTOR";
+    const customerLabel = toAsciiSafe(customerId || "CUSTOMER", 20) || "CUSTOMER";
+    const watermarkLine1 = `CHECKOUT | ${customerLabel}`;
+    const watermarkLine2 = `${formatAsciiTimestamp(now)} | ${actorLabel}`;
 
-    const timestamp = now.toISOString().replace(/[:.]/g, "-");
-    const filename = `checkout-${timestamp}.jpg`;
-    const filepath = path.join(uploadDir, filename);
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
 
-    const watermarkText = `${now.toLocaleString("id-ID")} | ${actorUserId} | ${customerId}`;
-    const svgText = `<svg width="1000" height="60">
-      <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)"/>
-      <text x="10" y="40" font-family="Arial" font-size="24" fill="white">${watermarkText}</text>
+    const resizedBuffer = await sharp(buffer)
+      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+      .toBuffer();
+
+    const metadata = await sharp(resizedBuffer).metadata();
+    const imgWidth = Math.max(1, metadata.width ?? 1280);
+    const imgHeight = Math.max(1, metadata.height ?? 1280);
+    const watermarkHeight = Math.min(Math.max(48, Math.round(imgWidth * 0.1)), imgHeight);
+
+    const fontSize1 = Math.max(14, Math.round(imgWidth * 0.03));
+    const fontSize2 = Math.max(12, Math.round(imgWidth * 0.024));
+
+    const svgText = `<svg width="${imgWidth}" height="${watermarkHeight}">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)"/>
+      <text x="10" y="${Math.round(watermarkHeight * 0.42)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize1}" fill="#FFFFFF">${escapeXml(watermarkLine1)}</text>
+      <text x="10" y="${Math.round(watermarkHeight * 0.8)}" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="${fontSize2}" fill="#FFD700">${escapeXml(watermarkLine2)}</text>
     </svg>`;
 
-    await sharp(buffer)
-      .resize(1280, 1280, { fit: "inside", withoutEnlargement: true })
+    let quality = 80;
+    let processedBuffer = await sharp(resizedBuffer)
       .composite([{ input: Buffer.from(svgText), gravity: "south" }])
-      .jpeg({ quality: 80 })
-      .toFile(filepath);
+      .jpeg({ quality })
+      .toBuffer();
 
-    const stats = await stat(filepath);
-    if (stats.size > 1024 * 1024) {
-      await sharp(filepath)
-        .jpeg({ quality: 60 })
-        .toFile(filepath + ".tmp");
-      await rename(filepath + ".tmp", filepath);
+    while (processedBuffer.length > 1024 * 1024 && quality > 50) {
+      quality -= 10;
+      processedBuffer = await sharp(processedBuffer)
+        .jpeg({ quality })
+        .toBuffer();
     }
 
-    return `/uploads/visits/checkout/${year}/${month}/${filename}`;
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
   }
   static async getActiveVisit(customerId: string, salespersonId: string): Promise<CustomerVisit | null> {
     return prisma.customerVisit.findFirst({
@@ -379,6 +389,55 @@ export class VisitService {
         customer: { select: { id: true, name: true } },
       },
     });
+  }
+
+  static async getVisitById(id: string, viewer: { id: string; role: string }) {
+    const where: Record<string, unknown> = { id };
+    if (viewer.role === "STAFF") {
+      where.salespersonId = viewer.id;
+    }
+
+    const visit = await prisma.customerVisit.findFirst({
+      where,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            gpsLatitude: true,
+            gpsLongitude: true,
+          },
+        },
+        salesperson: { select: { id: true, name: true } },
+        salesOrders: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            soNumber: true,
+            status: true,
+            grandTotal: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      const err = new Error("Visit not found");
+      Object.assign(err, { status: 404 });
+      throw err;
+    }
+
+    const durationMinutes = visit.checkoutAt
+      ? Math.max(0, Math.round((visit.checkoutAt.getTime() - visit.checkInAt.getTime()) / 60000))
+      : null;
+
+    return {
+      ...visit,
+      durationMinutes,
+    };
   }
 
   static async listVisits(params: VisitListParams): Promise<PaginatedResponse<CustomerVisit>> {
