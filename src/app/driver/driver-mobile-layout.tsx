@@ -44,7 +44,10 @@ export default function DriverMobileLayout({ children, session }: DriverMobileLa
       {/* Top bar */}
       <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b bg-background px-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-primary">BatuFlow</span>
+          <span className="inline-flex items-center gap-0 text-sm font-bold">
+            <span className="text-primary">Batu</span>
+            <span className="text-foreground">Flow</span>
+          </span>
           <span className="text-xs text-muted-foreground">{t("driverLabel")}</span>
         </div>
         <div className="flex items-center gap-1">
