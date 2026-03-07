@@ -921,7 +921,11 @@
     "postedAt": "Diposting Pada",
     "autoPosted": "Otomatis",
     "manual": "Manual",
-    "searchPlaceholder": "Cari berdasarkan no. jurnal..."
+    "searchPlaceholder": "Cari berdasarkan no. jurnal...",
+    "descriptionPlaceholder": "mis. Penyesuaian akrual bulanan",
+    "lineDescriptionPlaceholder": "mis. Alokasi beban utilitas",
+    "selectAccount": "Pilih akun",
+    "saveAsDraft": "Simpan sebagai Draft"
   },
   "expenses": {
     "title": "Pengeluaran",
