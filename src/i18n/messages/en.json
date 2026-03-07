@@ -945,7 +945,11 @@
     "postedAt": "Posted At",
     "autoPosted": "Auto-Posted",
     "manual": "Manual",
-    "searchPlaceholder": "Search by entry number..."
+    "searchPlaceholder": "Search by entry number...",
+    "descriptionPlaceholder": "e.g. Monthly accrual adjustment",
+    "lineDescriptionPlaceholder": "e.g. Utilities expense allocation",
+    "selectAccount": "Select account",
+    "saveAsDraft": "Save as Draft"
   },
   "expenses": {
     "title": "Expenses",
