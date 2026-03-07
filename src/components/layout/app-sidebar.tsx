@@ -233,7 +233,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
+          className="flex items-center gap-0 group-data-[collapsible=icon]:justify-center"
         >
           <span className="text-lg font-semibold text-[#2563EB]">Batu</span>
           <span className="text-lg font-semibold text-foreground">Flow</span>
