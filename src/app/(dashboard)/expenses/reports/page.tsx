@@ -20,24 +20,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-/** Expense report API response structure */
-interface ExpenseReportData {
-  expenses: Array<{
-    id: string;
-    amount: number;
-    expenseDate: string;
-    category?: { name: string };
-    submitter?: { name: string };
-  }>;
+interface CashflowReportData {
   summary: {
-    grandTotal: number;
-    count: number;
-    byCategory: Array<{ name: string; total: number; count: number }>;
-    byUser: Array<{ name: string; total: number; count: number }>;
+    totalExpense: number;
+    totalReceipt: number;
+    netCashflow: number;
+    byCategory: Array<{ name: string; type: "EXPENSE" | "RECEIPT"; total: number; count: number }>;
+    byUser: Array<{ name: string; totalExpense: number; totalReceipt: number; netCashflow: number; count: number }>;
   };
 }
 
-/** Formats amount in Indonesian Rupiah (IDR) */
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -45,15 +37,14 @@ const formatCurrency = (val: number) =>
     minimumFractionDigits: 0,
   }).format(val);
 
-export default function ExpenseReportsPage() {
+export default function CashflowReportsPage() {
   const t = useTranslations("reports");
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [data, setData] = useState<ExpenseReportData | null>(null);
+  const [data, setData] = useState<CashflowReportData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  /** Clear report when filter dates change */
   useEffect(() => {
     setData(null);
   }, [dateFrom, dateTo]);
@@ -63,10 +54,11 @@ export default function ExpenseReportsPage() {
       toast.error(t("selectDateRange"));
       return;
     }
+
     try {
       setLoading(true);
       const params = new URLSearchParams({ dateFrom, dateTo });
-      const res = await fetch(`/api/expenses/report?${params}`);
+      const res = await fetch(`/api/cashflow/report?${params}`);
       const json = await res.json();
       if (json.success) {
         setData(json.data);
@@ -82,31 +74,18 @@ export default function ExpenseReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("expenseReport")}
-        description={t("expenseReportDescription")}
-      />
+      <PageHeader title={t("cashflowReport")} description={t("cashflowReportDescription")} />
 
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-2">
               <Label htmlFor="dateFrom">{t("dateFrom")}</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
+              <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="dateTo">{t("dateTo")}</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
+              <Input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
             <Button onClick={fetchReport} disabled={loading}>
               <Search className="mr-2 h-4 w-4" />
@@ -121,107 +100,80 @@ export default function ExpenseReportsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : data ? (
-        data.summary.count === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            {t("noData")}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Report period label */}
-            <p className="text-sm text-muted-foreground">
-              {format(new Date(dateFrom), "dd MMM yyyy")} –{" "}
-              {format(new Date(dateTo), "dd MMM yyyy")}
-            </p>
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            {format(new Date(dateFrom), "dd MMM yyyy")} – {format(new Date(dateTo), "dd MMM yyyy")}
+          </p>
 
-            {/* Summary: Grand Total and Total Count */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {t("grandTotal")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">
-                    {formatCurrency(data.summary.grandTotal)}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {t("count")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{data.summary.count}</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* By Category table */}
+          <div className="grid gap-4 sm:grid-cols-3">
             <Card>
-              <CardHeader>
-                <CardTitle>{t("byCategory")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("categoryName")}</TableHead>
-                      <TableHead className="text-right">{t("count")}</TableHead>
-                      <TableHead className="text-right">{t("total")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.summary.byCategory.map((row, idx) => (
-                      <TableRow key={`${row.name}-${idx}`}>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell className="text-right">{row.count}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(row.total)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
+              <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">{t("totalExpense")}</CardTitle></CardHeader>
+              <CardContent><p className="text-3xl font-bold">{formatCurrency(data.summary.totalExpense)}</p></CardContent>
             </Card>
-
-            {/* By User table */}
             <Card>
-              <CardHeader>
-                <CardTitle>{t("byUser")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("userName")}</TableHead>
-                      <TableHead className="text-right">{t("count")}</TableHead>
-                      <TableHead className="text-right">{t("total")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.summary.byUser.map((row, idx) => (
-                      <TableRow key={`${row.name}-${idx}`}>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell className="text-right">{row.count}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(row.total)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
+              <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">{t("totalReceipt")}</CardTitle></CardHeader>
+              <CardContent><p className="text-3xl font-bold">{formatCurrency(data.summary.totalReceipt)}</p></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">{t("netCashflow")}</CardTitle></CardHeader>
+              <CardContent><p className="text-3xl font-bold">{formatCurrency(data.summary.netCashflow)}</p></CardContent>
             </Card>
           </div>
-        )
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          {t("selectDateRangePrompt")}
+
+          <Card>
+            <CardHeader><CardTitle>{t("byCategory")}</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("categoryName")}</TableHead>
+                    <TableHead>{t("type")}</TableHead>
+                    <TableHead className="text-right">{t("count")}</TableHead>
+                    <TableHead className="text-right">{t("total")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.summary.byCategory.map((row, idx) => (
+                    <TableRow key={`${row.type}-${row.name}-${idx}`}>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell>{row.type === "EXPENSE" ? t("expense") : t("receipt")}</TableCell>
+                      <TableCell className="text-right">{row.count}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>{t("byUser")}</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("userName")}</TableHead>
+                    <TableHead className="text-right">{t("totalExpense")}</TableHead>
+                    <TableHead className="text-right">{t("totalReceipt")}</TableHead>
+                    <TableHead className="text-right">{t("netCashflow")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.summary.byUser.map((row, idx) => (
+                    <TableRow key={`${row.name}-${idx}`}>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.totalExpense)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.totalReceipt)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.netCashflow)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">{t("selectDateRangePrompt")}</div>
       )}
     </div>
   );

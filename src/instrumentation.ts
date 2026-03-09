@@ -5,9 +5,15 @@
  * the worker is skipped; audit logs are still written via direct DB fallback.
  */
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs" && process.env.REDIS_URL) {
+  const isVercel = process.env.VERCEL === "1";
+  if (process.env.NEXT_RUNTIME === "nodejs" && process.env.REDIS_URL && !isVercel) {
     const { startAuditWorker } = await import("@/services/audit.worker");
     startAuditWorker();
     console.log("[Instrumentation] Audit worker started");
+    return;
+  }
+
+  if (isVercel) {
+    console.log("[Instrumentation] Audit worker skipped on Vercel runtime");
   }
 }

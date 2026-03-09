@@ -292,6 +292,35 @@ export class JournalService {
     });
   }
 
+  static async autoPostFromReceipt(
+    receiptId: string,
+    receiptNumber: string,
+    amount: number,
+    coaAccountId: string | null,
+    paymentMethod: string,
+    userId: string,
+    userRole: string,
+    ipAddress?: string
+  ): Promise<JournalEntry | null> {
+    const cashAccount = await prisma.account.findFirst({ where: { code: "1100", deletedAt: null } });
+    const defaultIncomeAccount = await prisma.account.findFirst({ where: { code: "4100", deletedAt: null } });
+
+    const incomeAccountId = coaAccountId || defaultIncomeAccount?.id;
+    if (!cashAccount || !incomeAccountId) return null;
+
+    return JournalService.autoPost({
+      entryDate: new Date(),
+      description: `Receipt approved: ${receiptNumber} (${paymentMethod})`,
+      referenceType: "Receipt",
+      referenceId: receiptId,
+      lines: [
+        { accountId: cashAccount.id, debit: amount, credit: 0, description: "Cash/Bank" },
+        { accountId: incomeAccountId, debit: 0, credit: amount, description: "Income" },
+      ],
+      userId, userRole, ipAddress,
+    });
+  }
+
   static async autoPostFromGoodsReceipt(
     receiptId: string,
     receiptNumber: string,
