@@ -97,7 +97,9 @@
     "searchShortcut": "Ctrl+K",
     "recentSearches": "Recent searches",
     "signOut": "Sign Out",
-    "myActivity": "My Activity"
+    "myActivity": "My Activity",
+    "receipts": "Receipts",
+    "allReceipts": "All Receipts"
   },
   "dashboard": {
     "welcomeBack": "Welcome Back",
@@ -1514,5 +1516,51 @@
         }
       }
     }
+  },
+  "receipts": {
+    "title": "Receipts",
+    "description": "Track and approve money-in receipts",
+    "createReceipt": "Create Receipt",
+    "editReceipt": "Edit Receipt",
+    "receiptNumber": "Receipt Number",
+    "receipt": "Receipt",
+    "category": "Category",
+    "amount": "Amount",
+    "receiptDate": "Receipt Date",
+    "date": "Date",
+    "paymentMethod": "Payment Method",
+    "referenceNo": "Reference No",
+    "source": "Source",
+    "status": "Status",
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "submit": "Submit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectionReason": "Rejection Reason",
+    "journalEntry": "Journal Entry",
+    "submitter": "Submitter",
+    "approver": "Approver",
+    "createReceiptDescription": "Create a new receipt draft to record incoming money.",
+    "selectCategory": "Select category",
+    "descriptionPlaceholder": "Enter receipt details",
+    "sourcePlaceholder": "e.g. Customer payment, refund",
+    "referenceNoPlaceholder": "Optional external reference",
+    "amountPlaceholder": "0.00",
+    "selectPaymentMethod": "Select payment method",
+    "createSuccess": "Receipt created successfully",
+    "submitSuccess": "Receipt submitted for approval",
+    "approveSuccess": "Receipt approved",
+    "rejectSuccess": "Receipt rejected",
+    "receiptDetails": "Receipt Details",
+    "statusAndApproval": "Status & Approval",
+    "submitForApproval": "Submit for Approval",
+    "notFound": "Receipt Not Found",
+    "receiptNotFound": "The requested receipt could not be found.",
+    "rejectReceipt": "Reject Receipt",
+    "rejectDescription": "Please provide a reason for rejection.",
+    "rejectionReasonPlaceholder": "Enter rejection reason"
   }
 }

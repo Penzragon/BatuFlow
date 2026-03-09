@@ -48,6 +48,8 @@ model User {
   postedJournalEntries  JournalEntry[]    @relation("JEPostedBy")
   submittedExpenses     Expense[]         @relation("ExpenseSubmittedBy")
   approvedExpenses      Expense[]         @relation("ExpenseApprovedBy")
+  submittedReceipts     Receipt[]         @relation("ReceiptSubmittedBy")
+  approvedReceipts      Receipt[]         @relation("ReceiptApprovedBy")
   closedFiscalPeriods   FiscalPeriod[]    @relation("FPClosedBy")
   approvedLeaves       LeaveRequest[]    @relation("LeaveApprovedBy")
   createdPayrollRuns   PayrollRun[]      @relation("PayrollCreatedBy")
@@ -852,6 +854,7 @@ model ExpenseCategory {
 
   coaAccount Account?  @relation(fields: [coaAccountId], references: [id])
   expenses   Expense[]
+  receipts   Receipt[]
 
   @@map("expense_categories")
 }
@@ -1391,6 +1394,15 @@ enum ExpenseStatus {
   @@map("expense_status")
 }
 
+enum ReceiptStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+
+  @@map("receipt_status")
+}
+
 enum FiscalPeriodStatus {
   OPEN
   CLOSED
@@ -1418,6 +1430,7 @@ model JournalEntry {
   poster   User?         @relation("JEPostedBy", fields: [postedBy], references: [id])
   lines    JournalLine[]
   expenses Expense[]
+  receipts Receipt[]
   payrollRuns PayrollRun[]
 
   @@index([entryDate])
@@ -1471,6 +1484,38 @@ model Expense {
   @@index([submittedBy])
   @@index([expenseDate])
   @@map("expenses")
+}
+
+model Receipt {
+  id              String        @id @default(uuid())
+  receiptNumber   String        @unique @map("receipt_number")
+  categoryId      String        @map("category_id")
+  amount          Float
+  description     String?
+  receiptDate     DateTime      @map("receipt_date")
+  paymentMethod   PaymentMethod @default(CASH) @map("payment_method")
+  referenceNo     String?       @map("reference_no")
+  source          String?
+  status          ReceiptStatus @default(DRAFT)
+  submittedBy     String        @map("submitted_by")
+  approvedBy      String?       @map("approved_by")
+  approvedAt      DateTime?     @map("approved_at")
+  rejectionReason String?       @map("rejection_reason")
+  journalEntryId  String?       @map("journal_entry_id")
+  deletedAt       DateTime?     @map("deleted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  submitter    User            @relation("ReceiptSubmittedBy", fields: [submittedBy], references: [id])
+  approver     User?           @relation("ReceiptApprovedBy", fields: [approvedBy], references: [id])
+  journalEntry JournalEntry?   @relation(fields: [journalEntryId], references: [id])
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([submittedBy])
+  @@index([receiptDate])
+  @@map("receipts")
 }
 
 model FiscalPeriod {

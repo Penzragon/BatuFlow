@@ -20,6 +20,7 @@ const SEGMENT_TRANSLATION_MAP: Record<string, string> = {
   finance: "finance",
   hr: "hr",
   expenses: "expenses",
+  receipts: "receipts",
   delivery: "delivery",
   settings: "settings",
   customers: "customers",

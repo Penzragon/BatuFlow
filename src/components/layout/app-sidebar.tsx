@@ -118,6 +118,15 @@ const navItems = [
     disabled: false,
   },
   {
+    labelKey: "receipts",
+    href: "/receipts",
+    icon: Receipt,
+    children: [
+      { labelKey: "allReceipts", href: "/receipts" },
+    ],
+    disabled: false,
+  },
+  {
     labelKey: "delivery",
     href: "/delivery",
     icon: Truck,

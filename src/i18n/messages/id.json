@@ -97,7 +97,9 @@
     "searchShortcut": "Ctrl+K",
     "recentSearches": "Pencarian terbaru",
     "signOut": "Keluar",
-    "myActivity": "Aktivitas Saya"
+    "myActivity": "Aktivitas Saya",
+    "receipts": "Penerimaan",
+    "allReceipts": "Semua Penerimaan"
   },
   "dashboard": {
     "welcomeBack": "Selamat Datang Kembali",
@@ -1484,5 +1486,51 @@
         }
       }
     }
+  },
+  "receipts": {
+    "title": "Penerimaan",
+    "description": "Kelola dan setujui penerimaan uang masuk",
+    "createReceipt": "Buat Penerimaan",
+    "editReceipt": "Ubah Penerimaan",
+    "receiptNumber": "Nomor Penerimaan",
+    "receipt": "Penerimaan",
+    "category": "Kategori",
+    "amount": "Jumlah",
+    "receiptDate": "Tanggal Penerimaan",
+    "date": "Tanggal",
+    "paymentMethod": "Metode Pembayaran",
+    "referenceNo": "No Referensi",
+    "source": "Sumber",
+    "status": "Status",
+    "draft": "Draft",
+    "submitted": "Diajukan",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "submit": "Ajukan",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "rejectionReason": "Alasan Penolakan",
+    "journalEntry": "Entri Jurnal",
+    "submitter": "Pengaju",
+    "approver": "Penyetuju",
+    "createReceiptDescription": "Buat draft penerimaan baru untuk mencatat uang masuk.",
+    "selectCategory": "Pilih kategori",
+    "descriptionPlaceholder": "Masukkan rincian penerimaan",
+    "sourcePlaceholder": "contoh: pembayaran pelanggan, refund",
+    "referenceNoPlaceholder": "Referensi eksternal opsional",
+    "amountPlaceholder": "0.00",
+    "selectPaymentMethod": "Pilih metode pembayaran",
+    "createSuccess": "Penerimaan berhasil dibuat",
+    "submitSuccess": "Penerimaan berhasil diajukan",
+    "approveSuccess": "Penerimaan berhasil disetujui",
+    "rejectSuccess": "Penerimaan berhasil ditolak",
+    "receiptDetails": "Detail Penerimaan",
+    "statusAndApproval": "Status & Persetujuan",
+    "submitForApproval": "Ajukan untuk Persetujuan",
+    "notFound": "Penerimaan Tidak Ditemukan",
+    "receiptNotFound": "Data penerimaan yang diminta tidak ditemukan.",
+    "rejectReceipt": "Tolak Penerimaan",
+    "rejectDescription": "Harap berikan alasan penolakan.",
+    "rejectionReasonPlaceholder": "Masukkan alasan penolakan"
   }
 }
