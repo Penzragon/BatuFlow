@@ -433,7 +433,7 @@ export default function SalesMobileOrderForm() {
                 <div>
                   <Label>{t("linesSection.discountTypeLabel")}</Label>
                   <Select value={line.discountType} onValueChange={(v: DiscountType) => updateLine(idx, { discountType: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="percent">{t("linesSection.discountTypes.percent")}</SelectItem>
                       <SelectItem value="amount">{t("linesSection.discountTypes.amount")}</SelectItem>
