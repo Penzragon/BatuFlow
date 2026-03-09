@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye } from "lucide-react";
+import { Eye, Search, Funnel, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -121,10 +121,10 @@ export default function DeliveryOrdersPage() {
     <div className="space-y-6">
       <PageHeader title={t("title")} />
 
-      <Card><CardContent className="pt-6 grid gap-3 sm:grid-cols-3">
-        <div className="sm:col-span-2"><Label>Search</Label><Input value={search} onChange={(e)=>setSearch(e.target.value)} /></div>
-        <div><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="DRAFT">DRAFT</SelectItem><SelectItem value="CONFIRMED">CONFIRMED</SelectItem></SelectContent></Select></div>
-        <div><Label>Sort</Label><Select value={sort} onValueChange={setSort}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="doNumber:asc">DO # A-Z</SelectItem></SelectContent></Select></div>
+      <Card><CardContent className="pt-6 flex flex-wrap items-end gap-3">
+        <div className="min-w-[260px] flex-1"><Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label><Input value={search} onChange={(e)=>setSearch(e.target.value)} /></div>
+        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="DRAFT">DRAFT</SelectItem><SelectItem value="CONFIRMED">CONFIRMED</SelectItem></SelectContent></Select></div>
+        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label><Select value={sort} onValueChange={setSort}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="doNumber:asc">DO # A-Z</SelectItem></SelectContent></Select></div>
       </CardContent></Card>
 
       <DataTable columns={columns} data={filtered} isLoading={loading} />

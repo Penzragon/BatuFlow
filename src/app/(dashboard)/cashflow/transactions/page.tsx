@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -102,13 +103,13 @@ export default function CashflowTransactionsPage() {
 
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-6">
-            <div className="sm:col-span-2">
-              <Label>Search</Label>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[260px] flex-1">
+              <Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label>
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
             </div>
-            <div>
-              <Label>Type</Label>
+            <div className="w-[170px]">
+              <Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Type</Label>
               <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -118,10 +119,10 @@ export default function CashflowTransactionsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
-            <div><Label>To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
-            <div>
-              <Label>Sort</Label>
+            <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
+            <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
+            <div className="w-[180px]">
+              <Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label>
               <Select value={sort} onValueChange={setSort}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -116,12 +116,12 @@ export default function SalesOrdersPage() {
       />
 
       <Card>
-        <CardContent className="pt-6 grid gap-3 sm:grid-cols-6">
-          <div className="sm:col-span-2"><Label>Search</Label><Input value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-          <div><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem>{["DRAFT","CONFIRMED","WAITING_APPROVAL","PARTIALLY_DELIVERED","FULLY_DELIVERED","CLOSED","CANCELLED"].map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-          <div><Label>From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
-          <div><Label>To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
-          <div><Label>Sort</Label><Select value={`${sortBy}:${sortOrder}`} onValueChange={(v)=>{const [sb,so]=v.split(":");setSortBy(sb as any);setSortOrder(so as any);}}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="grandTotal:desc">Amount ↓</SelectItem><SelectItem value="grandTotal:asc">Amount ↑</SelectItem><SelectItem value="soNumber:asc">SO # A-Z</SelectItem></SelectContent></Select></div>
+        <CardContent className="pt-6 flex flex-wrap items-end gap-3">
+          <div className="min-w-[260px] flex-1"><Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label><Input value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+          <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem>{["DRAFT","CONFIRMED","WAITING_APPROVAL","PARTIALLY_DELIVERED","FULLY_DELIVERED","CLOSED","CANCELLED"].map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+          <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
+          <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
+          <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label><Select value={`${sortBy}:${sortOrder}`} onValueChange={(v)=>{const [sb,so]=v.split(":");setSortBy(sb as any);setSortOrder(so as any);}}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="grandTotal:desc">Amount ↓</SelectItem><SelectItem value="grandTotal:asc">Amount ↑</SelectItem><SelectItem value="soNumber:asc">SO # A-Z</SelectItem></SelectContent></Select></div>
         </CardContent>
       </Card>
 
