@@ -447,9 +447,7 @@
     "notes": "Catatan",
     "activeVisit": "Kunjungan Aktif",
     "noActiveVisit": "Tidak ada kunjungan aktif untuk pelanggan ini",
-    "print": "Cetak",
-    "salesperson": "Salesman",
-    "selectSalesperson": "Pilih salesman"
+    "print": "Cetak"
   },
   "deliveryOrders": {
     "title": "Surat Jalan",

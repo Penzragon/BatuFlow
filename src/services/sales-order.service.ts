@@ -19,7 +19,6 @@ const soLineSchema = z.object({
 export const createSOSchema = z.object({
   customerId: z.string().uuid(),
   visitId: z.string().uuid().optional(),
-  salespersonId: z.string().uuid().optional(),
   lines: z.array(soLineSchema).min(1),
   notes: z.string().optional(),
   includePpn: z.boolean().default(true),
@@ -130,25 +129,7 @@ export class SalesOrderService {
       throw new Error("Customer not found");
     }
 
-    const isPrivileged = userRole === "ADMIN" || userRole === "MANAGER";
-    let creatorId = userId;
-
-    if (parsed.salespersonId) {
-      if (!isPrivileged) {
-        throw new Error("Only admin or manager can assign salesperson");
-      }
-
-      const salesperson = await prisma.user.findUnique({
-        where: { id: parsed.salespersonId },
-        select: { id: true, role: true, isActive: true, deletedAt: true },
-      });
-      if (!salesperson || salesperson.role !== "STAFF" || !salesperson.isActive || salesperson.deletedAt) {
-        throw new Error("Salesperson not found");
-      }
-      creatorId = salesperson.id;
-    }
-
-    if (!isPrivileged && customer.salespersonId !== userId) {
+    if (userRole === "STAFF" && customer.salespersonId !== userId) {
       throw new Error("Customer not found");
     }
 
@@ -157,7 +138,7 @@ export class SalesOrderService {
         where: { id: parsed.visitId },
         select: { customerId: true, salespersonId: true },
       });
-      if (!visit || visit.customerId !== parsed.customerId || visit.salespersonId !== creatorId) {
+      if (!visit || visit.customerId !== parsed.customerId || visit.salespersonId !== userId) {
         throw new Error("Visit not found");
       }
     }
@@ -243,7 +224,7 @@ export class SalesOrderService {
         notes: parsed.notes ?? null,
         needsApproval,
         approvalReason: approvalReason || null,
-        createdBy: creatorId,
+        createdBy: userId,
         lines: { create: lineData },
       },
       include: { lines: true },

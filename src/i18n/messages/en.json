@@ -471,9 +471,7 @@
     "notes": "Notes",
     "activeVisit": "Active Visit",
     "noActiveVisit": "No active visit for this customer",
-    "print": "Print",
-    "salesperson": "Salesperson",
-    "selectSalesperson": "Select salesperson"
+    "print": "Print"
   },
   "deliveryOrders": {
     "title": "Delivery Orders",

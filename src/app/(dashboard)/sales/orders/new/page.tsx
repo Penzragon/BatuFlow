@@ -36,11 +36,6 @@ interface Product {
   baseUom: string;
 }
 
-interface StaffUser {
-  id: string;
-  name: string;
-}
-
 type DiscountType = "percent" | "amount";
 
 interface SOLine {
@@ -65,8 +60,6 @@ export default function CreateSalesOrderPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [customerId, setCustomerId] = useState("");
-  const [salespersonId, setSalespersonId] = useState("");
-  const [salespeople, setSalespeople] = useState<StaffUser[]>([]);
   const [visitId, setVisitId] = useState<string | null>(null);
   const [activeVisit, setActiveVisit] = useState<{ id: string; checkInAt: string } | null>(null);
   const [notes, setNotes] = useState("");
@@ -92,21 +85,10 @@ export default function CreateSalesOrderPage() {
     if (json.success) setProducts(json.data.items);
   }, []);
 
-  const fetchSalespeople = useCallback(async () => {
-    try {
-      const res = await fetch("/api/users?role=STAFF&pageSize=200");
-      const json = await res.json();
-      if (json.success) setSalespeople(json.data.items ?? []);
-    } catch {
-      setSalespeople([]);
-    }
-  }, []);
-
   useEffect(() => {
     fetchCustomers();
     fetchProducts();
-    fetchSalespeople();
-  }, [fetchCustomers, fetchProducts, fetchSalespeople]);
+  }, [fetchCustomers, fetchProducts]);
 
   useEffect(() => {
     if (!customerId) {
@@ -230,7 +212,6 @@ export default function CreateSalesOrderPage() {
       const payload = {
         customerId,
         visitId: visitId ?? undefined,
-        salespersonId: salespersonId || undefined,
         notes: notes || undefined,
         includePpn,
         lines: lines.map((l) => ({
@@ -309,22 +290,6 @@ export default function CreateSalesOrderPage() {
                       {t("noActiveVisit")}
                     </Badge>
                   )}
-                </div>
-              )}
-
-              {salespeople.length > 0 && (
-                <div>
-                  <Label>{t("salesperson")}</Label>
-                  <Select value={salespersonId} onValueChange={setSalespersonId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectSalesperson")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {salespeople.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               )}
 
