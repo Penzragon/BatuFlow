@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/page-header";
@@ -21,6 +21,16 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -55,6 +65,73 @@ interface SOLine {
   priceOverride: boolean;
   uom: string;
   lineTotal: number;
+}
+
+interface SearchableOption {
+  value: string;
+  label: string;
+}
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyLabel,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: SearchableOption[];
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyLabel: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between font-normal", className)}
+        >
+          <span className="truncate text-left">{selected?.label ?? placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyLabel}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn("mr-2 h-4 w-4", value === option.value ? "opacity-100" : "opacity-0")}
+                  />
+                  <span className="truncate">{option.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function CreateSalesOrderPage() {
@@ -286,16 +363,14 @@ export default function CreateSalesOrderPage() {
             <CardContent className="space-y-4">
               <div>
                 <Label>{t("customer")}</Label>
-                <Select value={customerId} onValueChange={setCustomerId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={customerId}
+                  onChange={setCustomerId}
+                  options={customers.map((c) => ({ value: c.id, label: c.name }))}
+                  placeholder="Select a customer"
+                  searchPlaceholder="Type customer name..."
+                  emptyLabel="No customer found"
+                />
               </div>
 
               {customerId && (
@@ -315,16 +390,14 @@ export default function CreateSalesOrderPage() {
               {salespeople.length > 0 && (
                 <div>
                   <Label>{t("salesperson")}</Label>
-                  <Select value={salespersonId} onValueChange={setSalespersonId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectSalesperson")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {salespeople.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={salespersonId}
+                    onChange={setSalespersonId}
+                    options={salespeople.map((s) => ({ value: s.id, label: s.name }))}
+                    placeholder={t("selectSalesperson")}
+                    searchPlaceholder="Type salesperson name..."
+                    emptyLabel="No salesperson found"
+                  />
                 </div>
               )}
 
@@ -356,26 +429,19 @@ export default function CreateSalesOrderPage() {
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <div className="col-span-2">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-12">
+                        <div className="col-span-2 sm:col-span-6">
                           <Label>{t("product")}</Label>
-                          <Select
+                          <SearchableSelect
                             value={line.productId}
-                            onValueChange={(val) => updateLine(idx, "productId", val)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("selectProduct")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {products.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.sku} - {p.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            onChange={(val) => updateLine(idx, "productId", val)}
+                            options={products.map((p) => ({ value: p.id, label: `${p.sku} - ${p.name}` }))}
+                            placeholder={t("selectProduct")}
+                            searchPlaceholder="Type product name or SKU..."
+                            emptyLabel="No product found"
+                          />
                         </div>
-                        <div>
+                        <div className="sm:col-span-3">
                           <Label>{t("qty")}</Label>
                           <Input
                             type="number"
@@ -385,7 +451,7 @@ export default function CreateSalesOrderPage() {
                             onChange={(e) => updateLine(idx, "qty", parseFloat(e.target.value) || 0)}
                           />
                         </div>
-                        <div>
+                        <div className="sm:col-span-3">
                           <Label>{t("unitPrice")}</Label>
                           <Input
                             type="number"
@@ -395,7 +461,7 @@ export default function CreateSalesOrderPage() {
                             disabled={!line.priceOverride}
                           />
                         </div>
-                        <div>
+                        <div className="col-span-2 sm:col-span-6">
                           <Label>Discount</Label>
                           <div className="flex gap-2">
                             <Select
@@ -451,7 +517,7 @@ export default function CreateSalesOrderPage() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-2 sm:col-span-3">
                           <div className="flex items-center gap-2">
                             <Checkbox
                               id={`override-${idx}`}
@@ -461,7 +527,7 @@ export default function CreateSalesOrderPage() {
                             <Label htmlFor={`override-${idx}`} className="text-xs">{t("priceOverride")}</Label>
                           </div>
                         </div>
-                        <div className="flex items-end">
+                        <div className="flex items-end sm:col-span-3">
                           <div className="text-sm font-medium">{formatCurrency(line.lineTotal)}</div>
                         </div>
                       </div>
