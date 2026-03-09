@@ -99,7 +99,11 @@
     "signOut": "Sign Out",
     "myActivity": "My Activity",
     "receipts": "Receipts",
-    "allReceipts": "All Receipts"
+    "allReceipts": "All Receipts",
+    "cashflow": "Cashflow",
+    "transactions": "Transactions",
+    "receiptCategories": "Receipt Categories",
+    "cashflowReport": "Cashflow Report"
   },
   "dashboard": {
     "welcomeBack": "Welcome Back",
@@ -1107,7 +1111,14 @@
     "userName": "User Name",
     "selectDateRange": "Please select date range",
     "fetchError": "Failed to fetch report",
-    "selectDateRangePrompt": "Select date range and click Generate to view report"
+    "selectDateRangePrompt": "Select date range and click Generate to view report",
+    "cashflowReport": "Cashflow Report",
+    "cashflowReportDescription": "Combined expense and receipt breakdown by category and user",
+    "totalExpense": "Total Expense",
+    "totalReceipt": "Total Receipt",
+    "netCashflow": "Net Cashflow",
+    "expense": "Expense",
+    "receipt": "Receipt"
   },
   "employees": {
     "title": "Employees",
@@ -1562,5 +1573,25 @@
     "rejectReceipt": "Reject Receipt",
     "rejectDescription": "Please provide a reason for rejection.",
     "rejectionReasonPlaceholder": "Enter rejection reason"
+  },
+  "receiptCategories": {
+    "title": "Receipt Categories",
+    "description": "Manage receipt categories and their COA mappings",
+    "addCategory": "Add Category",
+    "editCategory": "Edit Category",
+    "name": "Name",
+    "coaAccount": "COA Account",
+    "noCoaMapping": "No COA mapping",
+    "updateSuccess": "Category updated",
+    "createSuccess": "Category created",
+    "deleteSuccess": "Category deleted",
+    "addDescription": "Add a new receipt category with optional COA mapping.",
+    "editDescription": "Update category name and COA account.",
+    "namePlaceholder": "e.g. Sales Return, Other Income",
+    "selectAccount": "Select COA account",
+    "update": "Update",
+    "create": "Create",
+    "deleteConfirmTitle": "Delete category?",
+    "deleteConfirmMessage": "This will deactivate \"{name}\". Categories with existing receipts cannot be deleted."
   }
 }

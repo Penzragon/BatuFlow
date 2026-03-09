@@ -831,6 +831,7 @@ model Account {
   children Account[] @relation("AccountHierarchy")
 
   expenseCategories ExpenseCategory[]
+  receiptCategories ReceiptCategory[]
   journalLines      JournalLine[]
 
   @@map("accounts")
@@ -861,9 +862,22 @@ model ExpenseCategory {
 
   coaAccount Account?  @relation(fields: [coaAccountId], references: [id])
   expenses   Expense[]
-  receipts   Receipt[]
 
   @@map("expense_categories")
+}
+
+model ReceiptCategory {
+  id           String    @id @default(uuid())
+  name         String
+  coaAccountId String?   @map("coa_account_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  coaAccount Account? @relation(fields: [coaAccountId], references: [id])
+  receipts   Receipt[]
+
+  @@map("receipt_categories")
 }
 
 // ─────────────────────────────────────────────
@@ -1513,7 +1527,7 @@ model Receipt {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  category     ReceiptCategory @relation(fields: [categoryId], references: [id])
   submitter    User            @relation("ReceiptSubmittedBy", fields: [submittedBy], references: [id])
   approver     User?           @relation("ReceiptApprovedBy", fields: [approvedBy], references: [id])
   journalEntry JournalEntry?   @relation(fields: [journalEntryId], references: [id])

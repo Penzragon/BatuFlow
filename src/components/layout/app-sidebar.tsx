@@ -107,22 +107,16 @@ const navItems = [
     disabled: false,
   },
   {
-    labelKey: "expenses",
-    href: "/expenses",
+    labelKey: "cashflow",
+    href: "/cashflow",
     icon: Receipt,
     children: [
+      { labelKey: "transactions", href: "/cashflow/transactions" },
       { labelKey: "allExpenses", href: "/expenses" },
-      { labelKey: "expenseCategories", href: "/expenses/categories" },
-      { labelKey: "expenseReports", href: "/expenses/reports" },
-    ],
-    disabled: false,
-  },
-  {
-    labelKey: "receipts",
-    href: "/receipts",
-    icon: Receipt,
-    children: [
       { labelKey: "allReceipts", href: "/receipts" },
+      { labelKey: "expenseCategories", href: "/expenses/categories" },
+      { labelKey: "receiptCategories", href: "/receipts/categories" },
+      { labelKey: "cashflowReport", href: "/expenses/reports" },
     ],
     disabled: false,
   },

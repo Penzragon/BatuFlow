@@ -99,7 +99,11 @@
     "signOut": "Keluar",
     "myActivity": "Aktivitas Saya",
     "receipts": "Penerimaan",
-    "allReceipts": "Semua Penerimaan"
+    "allReceipts": "Semua Penerimaan",
+    "cashflow": "Arus Kas",
+    "transactions": "Transaksi",
+    "receiptCategories": "Kategori Penerimaan",
+    "cashflowReport": "Laporan Arus Kas"
   },
   "dashboard": {
     "welcomeBack": "Selamat Datang Kembali",
@@ -1077,7 +1081,14 @@
     "userName": "Nama Pengguna",
     "selectDateRange": "Pilih rentang tanggal",
     "fetchError": "Gagal memuat laporan",
-    "selectDateRangePrompt": "Pilih rentang tanggal dan klik Buat untuk melihat laporan"
+    "selectDateRangePrompt": "Pilih rentang tanggal dan klik Buat untuk melihat laporan",
+    "cashflowReport": "Laporan Arus Kas",
+    "cashflowReportDescription": "Ringkasan gabungan pengeluaran dan penerimaan per kategori dan pengguna",
+    "totalExpense": "Total Pengeluaran",
+    "totalReceipt": "Total Penerimaan",
+    "netCashflow": "Arus Kas Bersih",
+    "expense": "Pengeluaran",
+    "receipt": "Penerimaan"
   },
   "employees": {
     "title": "Karyawan",
@@ -1532,5 +1543,25 @@
     "rejectReceipt": "Tolak Penerimaan",
     "rejectDescription": "Harap berikan alasan penolakan.",
     "rejectionReasonPlaceholder": "Masukkan alasan penolakan"
+  },
+  "receiptCategories": {
+    "title": "Kategori Penerimaan",
+    "description": "Kelola kategori penerimaan dan pemetaan COA",
+    "addCategory": "Tambah Kategori",
+    "editCategory": "Edit Kategori",
+    "name": "Nama",
+    "coaAccount": "Akun COA",
+    "noCoaMapping": "Tanpa pemetaan COA",
+    "updateSuccess": "Kategori diperbarui",
+    "createSuccess": "Kategori dibuat",
+    "deleteSuccess": "Kategori dihapus",
+    "addDescription": "Tambah kategori penerimaan baru dengan pemetaan COA opsional.",
+    "editDescription": "Perbarui nama kategori dan akun COA.",
+    "namePlaceholder": "cth. Retur Penjualan, Pendapatan Lain",
+    "selectAccount": "Pilih akun COA",
+    "update": "Perbarui",
+    "create": "Buat",
+    "deleteConfirmTitle": "Hapus kategori?",
+    "deleteConfirmMessage": "Ini akan menonaktifkan \"{name}\". Kategori dengan penerimaan yang sudah ada tidak dapat dihapus."
   }
 }

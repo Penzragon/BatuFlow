@@ -47,7 +47,7 @@ export class ReceiptService {
   ): Promise<Receipt> {
     const parsed = createReceiptSchema.parse(data);
 
-    const category = await prisma.expenseCategory.findUnique({ where: { id: parsed.categoryId } });
+    const category = await prisma.receiptCategory.findUnique({ where: { id: parsed.categoryId } });
     if (!category) throw new Error("Receipt category not found");
 
     const receiptNumber = await ReceiptService.generateReceiptNumber();
@@ -87,6 +87,11 @@ export class ReceiptService {
     const existing = await prisma.receipt.findUnique({ where: { id } });
     if (!existing) throw new Error("Receipt not found");
     if (existing.status !== "DRAFT") throw new Error("Only draft receipts can be updated");
+
+    if (parsed.categoryId !== undefined) {
+      const category = await prisma.receiptCategory.findUnique({ where: { id: parsed.categoryId } });
+      if (!category) throw new Error("Receipt category not found");
+    }
 
     const updated = await prisma.receipt.update({
       where: { id },

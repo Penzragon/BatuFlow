@@ -46,7 +46,7 @@ interface Receipt {
   approver?: { id: string; name: string };
 }
 
-interface ExpenseCategory {
+interface ReceiptCategory {
   id: string;
   name: string;
 }
@@ -70,7 +70,7 @@ export default function ReceiptsPage() {
   const router = useRouter();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [categories, setCategories] = useState<ReceiptCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -102,7 +102,7 @@ export default function ReceiptsPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/expense-categories?page=1&pageSize=100");
+      const res = await fetch("/api/receipt-categories?page=1&pageSize=100");
       const json = await res.json();
       if (json.success) {
         setCategories(json.data?.items ?? []);
