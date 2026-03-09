@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
+import { Search, Funnel, CalendarDays } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -31,15 +30,6 @@ type CombinedTx = {
 
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(val);
-
-function SortHeader({ title, onClick }: { title: string; onClick: () => void }) {
-  return (
-    <Button variant="ghost" className="h-8 px-2 -ml-2" onClick={onClick}>
-      {title}
-      <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-    </Button>
-  );
-}
 
 export default function CashflowTransactionsPage() {
   const tNav = useTranslations("nav");
@@ -103,12 +93,12 @@ export default function CashflowTransactionsPage() {
   const columns: ColumnDef<CombinedTx>[] = [
     {
       accessorKey: "date",
-      header: ({ column }) => <SortHeader title="Date" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      header: "Date",
       cell: ({ row }) => format(new Date(row.original.date), "dd MMM yyyy"),
     },
     {
       accessorKey: "type",
-      header: ({ column }) => <SortHeader title="Type" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      header: "Type",
       cell: ({ row }) => (
         <Badge className={row.original.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"} variant="secondary">
           {row.original.type}
@@ -117,28 +107,19 @@ export default function CashflowTransactionsPage() {
     },
     {
       accessorKey: "number",
-      header: ({ column }) => <SortHeader title="Number" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      header: "Number",
       cell: ({ row }) => (
         <Link href={row.original.type === "EXPENSE" ? `/expenses/${row.original.id}` : `/receipts/${row.original.id}`} className="text-blue-600 underline">
           {row.original.number}
         </Link>
       ),
     },
-    {
-      accessorKey: "category",
-      header: ({ column }) => <SortHeader title="Category" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
-    },
-    {
-      accessorKey: "owner",
-      header: ({ column }) => <SortHeader title="Owner" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
-    },
-    {
-      accessorKey: "status",
-      header: ({ column }) => <SortHeader title="Status" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
-    },
+    { accessorKey: "category", header: "Category" },
+    { accessorKey: "owner", header: "Owner" },
+    { accessorKey: "status", header: "Status" },
     {
       accessorKey: "amount",
-      header: ({ column }) => <SortHeader title="Amount" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      header: "Amount",
       cell: ({ row }) => (
         <div className={`text-right font-medium ${row.original.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
           {formatCurrency(row.original.amount)}

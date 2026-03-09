@@ -25,14 +25,12 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowUpDown,
-  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  Funnel,
   Search,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -91,7 +89,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/30 p-2 sm:gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-2">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {searchKey && (
             <div className="relative min-w-[220px] flex-1 sm:max-w-sm">
@@ -104,18 +102,11 @@ export function DataTable<TData, TValue>({
                 onChange={(e) =>
                   table.getColumn(searchKey)?.setFilterValue(e.target.value)
                 }
-                className="h-9 border-muted-foreground/20 bg-background pl-9"
+                className="h-9 bg-background pl-9"
               />
             </div>
           )}
-          {toolbar && (
-            <div className="flex flex-wrap items-center gap-2 text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
-              <Funnel />
-              <CalendarDays />
-              <ArrowUpDown />
-              <div className="contents text-foreground">{toolbar}</div>
-            </div>
-          )}
+          {toolbar}
         </div>
       </div>
 
