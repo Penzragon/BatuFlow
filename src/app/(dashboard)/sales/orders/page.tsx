@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, Eye, Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -13,9 +13,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 
 interface SOItem {
   id: string;
@@ -115,17 +113,35 @@ export default function SalesOrdersPage() {
         actions={<Button onClick={() => router.push("/sales/orders/new")}><Plus className="mr-2 h-4 w-4" />{t("createOrder")}</Button>}
       />
 
-      <Card>
-        <CardContent className="pt-6 flex flex-wrap items-end gap-3">
-          <div className="min-w-[260px] flex-1"><Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label><Input value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-          <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem>{["DRAFT","CONFIRMED","WAITING_APPROVAL","PARTIALLY_DELIVERED","FULLY_DELIVERED","CLOSED","CANCELLED"].map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-          <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
-          <div className="w-[160px]"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
-          <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label><Select value={`${sortBy}:${sortOrder}`} onValueChange={(v)=>{const [sb,so]=v.split(":");setSortBy(sb as any);setSortOrder(so as any);}}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="grandTotal:desc">Amount ↓</SelectItem><SelectItem value="grandTotal:asc">Amount ↑</SelectItem><SelectItem value="soNumber:asc">SO # A-Z</SelectItem></SelectContent></Select></div>
-        </CardContent>
-      </Card>
-
-      <DataTable columns={columns} data={filtered} isLoading={loading} />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                {["DRAFT","CONFIRMED","WAITING_APPROVAL","PARTIALLY_DELIVERED","FULLY_DELIVERED","CLOSED","CANCELLED"].map((s)=><SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} className="w-[160px]" />
+            <Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} className="w-[160px]" />
+            <Select value={`${sortBy}:${sortOrder}`} onValueChange={(v)=>{const [sb,so]=v.split(":");setSortBy(sb as any);setSortOrder(so as any);}}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt:desc">Date ↓</SelectItem>
+                <SelectItem value="createdAt:asc">Date ↑</SelectItem>
+                <SelectItem value="grandTotal:desc">Amount ↓</SelectItem>
+                <SelectItem value="grandTotal:asc">Amount ↑</SelectItem>
+                <SelectItem value="soNumber:asc">SO # A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => { setStatus("ALL"); setDateFrom(""); setDateTo(""); setSortBy("createdAt"); setSortOrder("desc"); }}>Reset</Button>
+          </div>
+        }
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye, BarChart3, Search, Funnel, ArrowUpDown } from "lucide-react";
+import { Eye, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -12,9 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface InvoiceItem {
@@ -130,13 +128,34 @@ export default function InvoicesPage() {
         }
       />
 
-      <Card><CardContent className="pt-6 flex flex-wrap items-end gap-3">
-        <div className="min-w-[260px] flex-1"><Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label><Input value={search} onChange={(e)=>setSearch(e.target.value)} /></div>
-        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem>{["DRAFT","ISSUED","PARTIALLY_PAID","PAID","OVERDUE"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label><Select value={sort} onValueChange={setSort}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Created ↓</SelectItem><SelectItem value="createdAt:asc">Created ↑</SelectItem><SelectItem value="dueDate:asc">Due ↑</SelectItem><SelectItem value="dueDate:desc">Due ↓</SelectItem><SelectItem value="grandTotal:desc">Amount ↓</SelectItem><SelectItem value="grandTotal:asc">Amount ↑</SelectItem></SelectContent></Select></div>
-      </CardContent></Card>
-
-      <DataTable columns={columns} data={filtered} isLoading={loading} />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status"/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                {["DRAFT","ISSUED","PARTIALLY_PAID","PAID","OVERDUE"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-[180px]"><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt:desc">Created ↓</SelectItem>
+                <SelectItem value="createdAt:asc">Created ↑</SelectItem>
+                <SelectItem value="dueDate:asc">Due ↑</SelectItem>
+                <SelectItem value="dueDate:desc">Due ↓</SelectItem>
+                <SelectItem value="grandTotal:desc">Amount ↓</SelectItem>
+                <SelectItem value="grandTotal:asc">Amount ↑</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => { setStatus("ALL"); setSort("createdAt:desc"); }}>Reset</Button>
+          </div>
+        }
+      />
     </div>
   );
 }

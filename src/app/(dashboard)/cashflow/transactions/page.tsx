@@ -5,15 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Search, Funnel, CalendarDays } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -132,29 +130,27 @@ export default function CashflowTransactionsPage() {
     <div className="space-y-6">
       <PageHeader title={tNav("transactions")} description="Combined list of expense and receipt transactions" />
 
-      <Card>
-        <CardContent className="pt-6 grid gap-3 md:grid-cols-10 items-end">
-          <div className="md:col-span-4">
-            <Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label>
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
-          </div>
-          <div className="md:col-span-2">
-            <Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Type</Label>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        pageSize={20}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
-              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All</SelectItem>
                 <SelectItem value="EXPENSE">Expense</SelectItem>
                 <SelectItem value="RECEIPT">Receipt</SelectItem>
               </SelectContent>
             </Select>
+            <Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} className="w-[160px]" />
+            <Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} className="w-[160px]" />
+            <Button variant="outline" onClick={() => { setType("ALL"); setDateFrom(""); setDateTo(""); }}>Reset</Button>
           </div>
-          <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
-          <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
-        </CardContent>
-      </Card>
-
-      <DataTable columns={columns} data={filtered} isLoading={loading} pageSize={20} />
+        }
+      />
     </div>
   );
 }

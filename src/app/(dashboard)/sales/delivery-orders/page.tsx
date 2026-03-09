@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye, Search, Funnel, ArrowUpDown } from "lucide-react";
+import { Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 
 interface DOItem { id: string; doNumber: string; status: string; createdAt: string; salesOrder: { id: string; soNumber: string; customer: { id: string; name: string } }; creator: { id: string; name: string }; _count: { lines: number }; }
 interface SOLine { id: string; productId: string; productName: string; productSku: string; qty: number; uom: string; }
@@ -121,13 +120,32 @@ export default function DeliveryOrdersPage() {
     <div className="space-y-6">
       <PageHeader title={t("title")} />
 
-      <Card><CardContent className="pt-6 flex flex-wrap items-end gap-3">
-        <div className="min-w-[260px] flex-1"><Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label><Input value={search} onChange={(e)=>setSearch(e.target.value)} /></div>
-        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="DRAFT">DRAFT</SelectItem><SelectItem value="CONFIRMED">CONFIRMED</SelectItem></SelectContent></Select></div>
-        <div className="w-[190px]"><Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label><Select value={sort} onValueChange={setSort}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Date ↓</SelectItem><SelectItem value="createdAt:asc">Date ↑</SelectItem><SelectItem value="doNumber:asc">DO # A-Z</SelectItem></SelectContent></Select></div>
-      </CardContent></Card>
-
-      <DataTable columns={columns} data={filtered} isLoading={loading} />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status"/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                <SelectItem value="DRAFT">DRAFT</SelectItem>
+                <SelectItem value="CONFIRMED">CONFIRMED</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-[180px]"><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt:desc">Date ↓</SelectItem>
+                <SelectItem value="createdAt:asc">Date ↑</SelectItem>
+                <SelectItem value="doNumber:asc">DO # A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => { setStatus("ALL"); setSort("createdAt:desc"); }}>Reset</Button>
+          </div>
+        }
+      />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{t("createDO")}</DialogTitle><DialogDescription>Creating from {soNumber}</DialogDescription></DialogHeader><div className="space-y-4">{soLines.map((line, idx) => (<div key={line.productId} className="flex items-center gap-3 text-sm"><div className="flex-1"><span className="font-medium">{line.productName}</span><span className="text-muted-foreground ml-1">({line.productSku})</span><div className="text-xs text-muted-foreground">{t("remainingQty")}: {line.remaining} {line.uom}</div></div><div className="w-24"><Input type="number" min={0} max={line.remaining} value={line.qtyToDeliver} onChange={(e) => { const val = Math.min(parseFloat(e.target.value) || 0, line.remaining); setSOLines((prev) => { const updated = [...prev]; updated[idx] = { ...updated[idx], qtyToDeliver: val }; return updated; }); }} /></div></div>))}<div><Label>{t("notes")}</Label><Textarea value={createNotes} onChange={(e) => setCreateNotes(e.target.value)} rows={2} /></div></div><DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>{tc("cancel")}</Button><Button onClick={handleCreateDO} disabled={submitting}>{submitting ? tc("loading") : t("createDO")}</Button></DialogFooter></DialogContent></Dialog>
     </div>
