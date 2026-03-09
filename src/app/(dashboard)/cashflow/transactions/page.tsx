@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -132,7 +133,14 @@ export default function CashflowTransactionsPage() {
                   filtered.map((it) => (
                     <TableRow key={`${it.type}-${it.id}`}>
                       <TableCell>{format(new Date(it.date), "dd MMM yyyy")}</TableCell>
-                      <TableCell>{it.type}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={it.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"}
+                          variant="secondary"
+                        >
+                          {it.type}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Link href={it.type === "EXPENSE" ? `/expenses/${it.id}` : `/receipts/${it.id}`} className="text-blue-600 underline">
                           {it.number}
@@ -141,7 +149,9 @@ export default function CashflowTransactionsPage() {
                       <TableCell>{it.category}</TableCell>
                       <TableCell>{it.owner}</TableCell>
                       <TableCell>{it.status}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(it.amount)}</TableCell>
+                      <TableCell className={`text-right font-medium ${it.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
+                        {formatCurrency(it.amount)}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
