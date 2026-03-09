@@ -108,7 +108,7 @@ export default function CashflowTransactionsPage() {
     },
     {
       accessorKey: "type",
-      header: "Type",
+      header: ({ column }) => <SortHeader title="Type" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
       cell: ({ row }) => (
         <Badge className={row.original.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"} variant="secondary">
           {row.original.type}
@@ -124,9 +124,18 @@ export default function CashflowTransactionsPage() {
         </Link>
       ),
     },
-    { accessorKey: "category", header: "Category" },
-    { accessorKey: "owner", header: "Owner" },
-    { accessorKey: "status", header: "Status" },
+    {
+      accessorKey: "category",
+      header: ({ column }) => <SortHeader title="Category" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+    },
+    {
+      accessorKey: "owner",
+      header: ({ column }) => <SortHeader title="Owner" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => <SortHeader title="Status" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+    },
     {
       accessorKey: "amount",
       header: ({ column }) => <SortHeader title="Amount" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
@@ -151,7 +160,7 @@ export default function CashflowTransactionsPage() {
           <div className="md:col-span-2">
             <Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Type</Label>
             <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All</SelectItem>
                 <SelectItem value="EXPENSE">Expense</SelectItem>
