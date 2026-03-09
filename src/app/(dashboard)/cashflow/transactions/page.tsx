@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
+import { ColumnDef } from "@tanstack/react-table";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { DataTable } from "@/components/shared/data-table";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -35,6 +35,8 @@ export default function CashflowTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [type, setType] = useState<"ALL" | TxType>("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -68,8 +70,7 @@ export default function CashflowTransactionsPage() {
           owner: r.submitter?.name ?? "-",
         }));
 
-        const merged = [...expenses, ...receipts].sort((a, b) => +new Date(b.date) - +new Date(a.date));
-        setItems(merged);
+        setItems([...expenses, ...receipts]);
       } finally {
         setLoading(false);
       }
@@ -80,86 +81,76 @@ export default function CashflowTransactionsPage() {
     const q = search.trim().toLowerCase();
     return items.filter((it) => {
       if (type !== "ALL" && it.type !== type) return false;
+      if (dateFrom && new Date(it.date) < new Date(dateFrom)) return false;
+      if (dateTo && new Date(it.date) > new Date(`${dateTo}T23:59:59`)) return false;
       if (!q) return true;
       return [it.number, it.category, it.owner, it.status].join(" ").toLowerCase().includes(q);
     });
-  }, [items, search, type]);
+  }, [items, search, type, dateFrom, dateTo]);
+
+  const columns: ColumnDef<CombinedTx>[] = [
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => format(new Date(row.original.date), "dd MMM yyyy"),
+    },
+    {
+      accessorKey: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge className={row.original.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"} variant="secondary">
+          {row.original.type}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "number",
+      header: "Number",
+      cell: ({ row }) => (
+        <Link href={row.original.type === "EXPENSE" ? `/expenses/${row.original.id}` : `/receipts/${row.original.id}`} className="text-blue-600 underline">
+          {row.original.number}
+        </Link>
+      ),
+    },
+    { accessorKey: "category", header: "Category" },
+    { accessorKey: "owner", header: "Owner" },
+    { accessorKey: "status", header: "Status" },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      cell: ({ row }) => (
+        <div className={`text-right font-medium ${row.original.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
+          {formatCurrency(row.original.amount)}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader title={tNav("transactions")} description="Combined list of expense and receipt transactions" />
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <Label>Search</Label>
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
-            </div>
-            <div>
-              <Label>Type</Label>
-              <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All</SelectItem>
-                  <SelectItem value="EXPENSE">Expense</SelectItem>
-                  <SelectItem value="RECEIPT">Receipt</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        pageSize={20}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                <SelectItem value="EXPENSE">Expense</SelectItem>
+                <SelectItem value="RECEIPT">Receipt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} className="w-[160px]" />
+            <Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} className="w-[160px]" />
+            <Button variant="outline" onClick={() => { setType("ALL"); setDateFrom(""); setDateTo(""); }}>Reset</Button>
           </div>
-
-          {loading ? (
-            <div className="py-8 text-sm text-muted-foreground">Loading transactions...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">No transactions found</TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map((it) => (
-                    <TableRow key={`${it.type}-${it.id}`}>
-                      <TableCell>{format(new Date(it.date), "dd MMM yyyy")}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={it.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"}
-                          variant="secondary"
-                        >
-                          {it.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={it.type === "EXPENSE" ? `/expenses/${it.id}` : `/receipts/${it.id}`} className="text-blue-600 underline">
-                          {it.number}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{it.category}</TableCell>
-                      <TableCell>{it.owner}</TableCell>
-                      <TableCell>{it.status}</TableCell>
-                      <TableCell className={`text-right font-medium ${it.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
-                        {formatCurrency(it.amount)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        }
+      />
     </div>
   );
 }

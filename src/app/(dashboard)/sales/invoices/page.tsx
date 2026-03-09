@@ -12,6 +12,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface InvoiceItem {
   id: string;
@@ -31,11 +33,14 @@ export default function InvoicesPage() {
 
   const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [sort, setSort] = useState("createdAt:desc");
 
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/invoices?pageSize=100");
+      const res = await fetch("/api/invoices?pageSize=500");
       const json = await res.json();
       if (json.success) setInvoices(json.data.items);
     } catch {
@@ -52,50 +57,45 @@ export default function InvoicesPage() {
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(val);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const [sb, so] = sort.split(":") as ["createdAt"|"dueDate"|"grandTotal", "asc"|"desc"];
+    const dir = so === "asc" ? 1 : -1;
+
+    return [...invoices]
+      .filter((i) => {
+        if (status !== "ALL" && i.status !== status) return false;
+        if (!q) return true;
+        return [i.invoiceNumber, i.customer?.name, i.deliveryOrder?.salesOrder?.soNumber].join(" ").toLowerCase().includes(q);
+      })
+      .sort((a,b) => {
+        if (sb === "grandTotal") return (a.grandTotal - b.grandTotal) * dir;
+        if (sb === "dueDate") return (new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()) * dir;
+        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+      });
+  }, [invoices, search, status, sort]);
+
   const columns: ColumnDef<InvoiceItem>[] = useMemo(
     () => [
       {
         accessorKey: "invoiceNumber",
         header: t("invoiceNumber"),
         cell: ({ row }) => (
-          <button
-            className="font-medium text-blue-600 hover:underline"
-            onClick={() => router.push(`/sales/invoices/${row.original.id}`)}
-          >
+          <button className="font-medium text-blue-600 hover:underline" onClick={() => router.push(`/sales/invoices/${row.original.id}`)}>
             {row.original.invoiceNumber}
           </button>
         ),
       },
-      {
-        id: "customer",
-        header: t("customer"),
-        cell: ({ row }) => row.original.customer?.name ?? "-",
-      },
-      {
-        id: "soNumber",
-        header: "SO",
-        cell: ({ row }) => row.original.deliveryOrder?.salesOrder?.soNumber ?? "-",
-      },
-      {
-        accessorKey: "status",
-        header: t("status"),
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
-      },
-      {
-        accessorKey: "grandTotal",
-        header: t("grandTotal"),
-        cell: ({ row }) => formatCurrency(row.original.grandTotal),
-      },
+      { id: "customer", header: t("customer"), cell: ({ row }) => row.original.customer?.name ?? "-" },
+      { id: "soNumber", header: "SO", cell: ({ row }) => row.original.deliveryOrder?.salesOrder?.soNumber ?? "-" },
+      { accessorKey: "status", header: t("status"), cell: ({ row }) => <StatusBadge status={row.original.status} /> },
+      { accessorKey: "grandTotal", header: t("grandTotal"), cell: ({ row }) => formatCurrency(row.original.grandTotal) },
       {
         id: "balance",
         header: t("balance"),
         cell: ({ row }) => {
           const balance = row.original.grandTotal - row.original.amountPaid;
-          return (
-            <span className={balance > 0 ? "text-red-600 font-medium" : "text-green-600"}>
-              {formatCurrency(balance)}
-            </span>
-          );
+          return <span className={balance > 0 ? "text-red-600 font-medium" : "text-green-600"}>{formatCurrency(balance)}</span>;
         },
       },
       {
@@ -104,25 +104,13 @@ export default function InvoicesPage() {
         cell: ({ row }) => {
           const due = new Date(row.original.dueDate);
           const isOverdue = due < new Date() && !["PAID", "DRAFT"].includes(row.original.status);
-          return (
-            <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-              {format(due, "dd MMM yyyy")}
-            </span>
-          );
+          return <span className={isOverdue ? "text-red-600 font-medium" : ""}>{format(due, "dd MMM yyyy")}</span>;
         },
       },
       {
         id: "actions",
         header: "",
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(`/sales/invoices/${row.original.id}`)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        ),
+        cell: ({ row }) => <Button variant="ghost" size="icon" onClick={() => router.push(`/sales/invoices/${row.original.id}`)}><Eye className="h-4 w-4" /></Button>,
       },
     ],
     [t, router]
@@ -139,7 +127,35 @@ export default function InvoicesPage() {
           </Button>
         }
       />
-      <DataTable columns={columns} data={invoices} isLoading={loading} />
+
+      <DataTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status"/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                {["DRAFT","ISSUED","PARTIALLY_PAID","PAID","OVERDUE"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-[180px]"><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt:desc">Created ↓</SelectItem>
+                <SelectItem value="createdAt:asc">Created ↑</SelectItem>
+                <SelectItem value="dueDate:asc">Due ↑</SelectItem>
+                <SelectItem value="dueDate:desc">Due ↓</SelectItem>
+                <SelectItem value="grandTotal:desc">Amount ↓</SelectItem>
+                <SelectItem value="grandTotal:asc">Amount ↑</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => { setStatus("ALL"); setSort("createdAt:desc"); }}>Reset</Button>
+          </div>
+        }
+      />
     </div>
   );
 }
