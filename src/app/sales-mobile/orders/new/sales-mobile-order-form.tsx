@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type Customer = { id: string; name: string };
 type Product = { id: string; sku: string; name: string; sellPrice: number; baseUom: string };
@@ -38,6 +48,61 @@ type OrderDraft = {
 };
 
 const ORDER_DRAFT_KEY = "batuflow:sales-mobile:order-draft:v1";
+
+type SearchableOption = { value: string; label: string };
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: SearchableOption[];
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal">
+          <span className="truncate text-left">{selected?.label ?? placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyLabel}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === option.value ? "opacity-100" : "opacity-0")} />
+                  <span className="truncate">{option.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function SalesMobileOrderForm() {
   const router = useRouter();
@@ -285,12 +350,14 @@ export default function SalesMobileOrderForm() {
         <CardContent className="space-y-3">
           <div>
             <Label>{t("customerSection.customerLabel")}</Label>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger><SelectValue placeholder={t("customerSection.customerPlaceholder")} /></SelectTrigger>
-              <SelectContent>
-                {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={customerId}
+              onChange={setCustomerId}
+              options={customers.map((c) => ({ value: c.id, label: c.name }))}
+              placeholder={t("customerSection.customerPlaceholder")}
+              searchPlaceholder="Type customer name..."
+              emptyLabel="No customer found"
+            />
           </div>
           <div>
             <Label>{t("customerSection.notesLabel")}</Label>
@@ -319,9 +386,9 @@ export default function SalesMobileOrderForm() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="col-span-2">
                   <Label>{t("linesSection.productLabel")}</Label>
-                  <Select
+                  <SearchableSelect
                     value={line.productId}
-                    onValueChange={(productId) => {
+                    onChange={(productId) => {
                       const product = products.find((p) => p.id === productId);
                       if (!product) return;
                       updateLine(idx, { productId, unitPrice: product.sellPrice, uom: product.baseUom });
@@ -331,12 +398,11 @@ export default function SalesMobileOrderForm() {
                         });
                       }
                     }}
-                  >
-                    <SelectTrigger><SelectValue placeholder={t("linesSection.productPlaceholder")} /></SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.sku} - {p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                    options={products.map((p) => ({ value: p.id, label: `${p.sku} - ${p.name}` }))}
+                    placeholder={t("linesSection.productPlaceholder")}
+                    searchPlaceholder="Type product name or SKU..."
+                    emptyLabel="No product found"
+                  />
                 </div>
 
                 <div>
@@ -367,7 +433,7 @@ export default function SalesMobileOrderForm() {
                 <div>
                   <Label>{t("linesSection.discountTypeLabel")}</Label>
                   <Select value={line.discountType} onValueChange={(v: DiscountType) => updateLine(idx, { discountType: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="percent">{t("linesSection.discountTypes.percent")}</SelectItem>
                       <SelectItem value="amount">{t("linesSection.discountTypes.amount")}</SelectItem>
