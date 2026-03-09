@@ -12,6 +12,11 @@ export function apiHandler(
       return await handler(req, context);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Internal server error";
+      try {
+        console.error("[apiHandler]", req.method, new URL(req.url).pathname, message);
+      } catch {
+        console.error("[apiHandler]", message);
+      }
       const status = err instanceof Error && "status" in err
         ? (err as Error & { status: number }).status
         : 500;
