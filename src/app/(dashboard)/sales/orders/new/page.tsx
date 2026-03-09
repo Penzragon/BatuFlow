@@ -461,7 +461,7 @@ export default function CreateSalesOrderPage() {
                             disabled={!line.priceOverride}
                           />
                         </div>
-                        <div>
+                        <div className="col-span-2 sm:col-span-6">
                           <Label>Discount</Label>
                           <div className="flex gap-2">
                             <Select
@@ -517,7 +517,7 @@ export default function CreateSalesOrderPage() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-2 sm:col-span-3">
                           <div className="flex items-center gap-2">
                             <Checkbox
                               id={`override-${idx}`}
@@ -527,7 +527,7 @@ export default function CreateSalesOrderPage() {
                             <Label htmlFor={`override-${idx}`} className="text-xs">{t("priceOverride")}</Label>
                           </div>
                         </div>
-                        <div className="flex items-end">
+                        <div className="flex items-end sm:col-span-3">
                           <div className="text-sm font-medium">{formatCurrency(line.lineTotal)}</div>
                         </div>
                       </div>
