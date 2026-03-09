@@ -35,6 +35,9 @@ export default function CashflowTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [type, setType] = useState<"ALL" | TxType>("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sort, setSort] = useState("date:desc");
 
   useEffect(() => {
     (async () => {
@@ -78,12 +81,20 @@ export default function CashflowTransactionsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const [sb, so] = sort.split(":") as ["date"|"amount"|"number", "asc"|"desc"];
+    const dir = so === "asc" ? 1 : -1;
     return items.filter((it) => {
       if (type !== "ALL" && it.type !== type) return false;
+      if (dateFrom && new Date(it.date) < new Date(dateFrom)) return false;
+      if (dateTo && new Date(it.date) > new Date(`${dateTo}T23:59:59`)) return false;
       if (!q) return true;
       return [it.number, it.category, it.owner, it.status].join(" ").toLowerCase().includes(q);
+    }).sort((a,b)=>{
+      if (sb === "amount") return (a.amount-b.amount)*dir;
+      if (sb === "number") return a.number.localeCompare(b.number)*dir;
+      return (new Date(a.date).getTime()-new Date(b.date).getTime())*dir;
     });
-  }, [items, search, type]);
+  }, [items, search, type, dateFrom, dateTo, sort]);
 
   return (
     <div className="space-y-6">
@@ -91,7 +102,7 @@ export default function CashflowTransactionsPage() {
 
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-6">
             <div className="sm:col-span-2">
               <Label>Search</Label>
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
@@ -104,6 +115,21 @@ export default function CashflowTransactionsPage() {
                   <SelectItem value="ALL">All</SelectItem>
                   <SelectItem value="EXPENSE">Expense</SelectItem>
                   <SelectItem value="RECEIPT">Receipt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
+            <div><Label>To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
+            <div>
+              <Label>Sort</Label>
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date:desc">Date ↓</SelectItem>
+                  <SelectItem value="date:asc">Date ↑</SelectItem>
+                  <SelectItem value="amount:desc">Amount ↓</SelectItem>
+                  <SelectItem value="amount:asc">Amount ↑</SelectItem>
+                  <SelectItem value="number:asc">Number A-Z</SelectItem>
                 </SelectContent>
               </Select>
             </div>
