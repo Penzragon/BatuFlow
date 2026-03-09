@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
+import { ColumnDef } from "@tanstack/react-table";
+import { Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { DataTable } from "@/components/shared/data-table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Funnel, CalendarDays, ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type TxType = "EXPENSE" | "RECEIPT";
 
@@ -30,6 +32,15 @@ type CombinedTx = {
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(val);
 
+function SortHeader({ title, onClick }: { title: string; onClick: () => void }) {
+  return (
+    <Button variant="ghost" className="h-8 px-2 -ml-2" onClick={onClick}>
+      {title}
+      <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+    </Button>
+  );
+}
+
 export default function CashflowTransactionsPage() {
   const tNav = useTranslations("nav");
   const [items, setItems] = useState<CombinedTx[]>([]);
@@ -38,7 +49,6 @@ export default function CashflowTransactionsPage() {
   const [type, setType] = useState<"ALL" | TxType>("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [sort, setSort] = useState("date:desc");
 
   useEffect(() => {
     (async () => {
@@ -72,8 +82,7 @@ export default function CashflowTransactionsPage() {
           owner: r.submitter?.name ?? "-",
         }));
 
-        const merged = [...expenses, ...receipts].sort((a, b) => +new Date(b.date) - +new Date(a.date));
-        setItems(merged);
+        setItems([...expenses, ...receipts]);
       } finally {
         setLoading(false);
       }
@@ -82,111 +91,80 @@ export default function CashflowTransactionsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const [sb, so] = sort.split(":") as ["date"|"amount"|"number", "asc"|"desc"];
-    const dir = so === "asc" ? 1 : -1;
     return items.filter((it) => {
       if (type !== "ALL" && it.type !== type) return false;
       if (dateFrom && new Date(it.date) < new Date(dateFrom)) return false;
       if (dateTo && new Date(it.date) > new Date(`${dateTo}T23:59:59`)) return false;
       if (!q) return true;
       return [it.number, it.category, it.owner, it.status].join(" ").toLowerCase().includes(q);
-    }).sort((a,b)=>{
-      if (sb === "amount") return (a.amount-b.amount)*dir;
-      if (sb === "number") return a.number.localeCompare(b.number)*dir;
-      return (new Date(a.date).getTime()-new Date(b.date).getTime())*dir;
     });
-  }, [items, search, type, dateFrom, dateTo, sort]);
+  }, [items, search, type, dateFrom, dateTo]);
+
+  const columns: ColumnDef<CombinedTx>[] = [
+    {
+      accessorKey: "date",
+      header: ({ column }) => <SortHeader title="Date" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      cell: ({ row }) => format(new Date(row.original.date), "dd MMM yyyy"),
+    },
+    {
+      accessorKey: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge className={row.original.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"} variant="secondary">
+          {row.original.type}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "number",
+      header: ({ column }) => <SortHeader title="Number" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      cell: ({ row }) => (
+        <Link href={row.original.type === "EXPENSE" ? `/expenses/${row.original.id}` : `/receipts/${row.original.id}`} className="text-blue-600 underline">
+          {row.original.number}
+        </Link>
+      ),
+    },
+    { accessorKey: "category", header: "Category" },
+    { accessorKey: "owner", header: "Owner" },
+    { accessorKey: "status", header: "Status" },
+    {
+      accessorKey: "amount",
+      header: ({ column }) => <SortHeader title="Amount" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      cell: ({ row }) => (
+        <div className={`text-right font-medium ${row.original.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
+          {formatCurrency(row.original.amount)}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader title={tNav("transactions")} description="Combined list of expense and receipt transactions" />
 
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 md:grid-cols-12 items-end">
-            <div className="md:col-span-5">
-              <Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label>
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
-            </div>
-            <div className="md:col-span-2">
-              <Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Type</Label>
-              <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All</SelectItem>
-                  <SelectItem value="EXPENSE">Expense</SelectItem>
-                  <SelectItem value="RECEIPT">Receipt</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
-            <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
-            <div className="md:col-span-1">
-              <Label className="mb-1 flex items-center gap-1"><ArrowUpDown className="h-3.5 w-3.5" />Sort</Label>
-              <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date:desc">Date ↓</SelectItem>
-                  <SelectItem value="date:asc">Date ↑</SelectItem>
-                  <SelectItem value="amount:desc">Amount ↓</SelectItem>
-                  <SelectItem value="amount:asc">Amount ↑</SelectItem>
-                  <SelectItem value="number:asc">Number A-Z</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="pt-6 grid gap-3 md:grid-cols-10 items-end">
+          <div className="md:col-span-4">
+            <Label className="mb-1 flex items-center gap-1"><Search className="h-3.5 w-3.5" />Search</Label>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search number/category/user/status..." />
           </div>
-
-          {loading ? (
-            <div className="py-8 text-sm text-muted-foreground">Loading transactions...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">No transactions found</TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map((it) => (
-                    <TableRow key={`${it.type}-${it.id}`}>
-                      <TableCell>{format(new Date(it.date), "dd MMM yyyy")}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={it.type === "EXPENSE" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-green-100 text-green-700 hover:bg-green-100"}
-                          variant="secondary"
-                        >
-                          {it.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={it.type === "EXPENSE" ? `/expenses/${it.id}` : `/receipts/${it.id}`} className="text-blue-600 underline">
-                          {it.number}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{it.category}</TableCell>
-                      <TableCell>{it.owner}</TableCell>
-                      <TableCell>{it.status}</TableCell>
-                      <TableCell className={`text-right font-medium ${it.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
-                        {formatCurrency(it.amount)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+          <div className="md:col-span-2">
+            <Label className="mb-1 flex items-center gap-1"><Funnel className="h-3.5 w-3.5" />Type</Label>
+            <Select value={type} onValueChange={(v: "ALL" | TxType) => setType(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                <SelectItem value="EXPENSE">Expense</SelectItem>
+                <SelectItem value="RECEIPT">Receipt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />From</Label><Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} /></div>
+          <div className="md:col-span-2"><Label className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />To</Label><Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} /></div>
         </CardContent>
       </Card>
+
+      <DataTable columns={columns} data={filtered} isLoading={loading} pageSize={20} />
     </div>
   );
 }
