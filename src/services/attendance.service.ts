@@ -70,8 +70,17 @@ interface ClockPayload {
 
 export class AttendanceService {
   static async getSchedule(employeeId: string) {
-    const schedule = await prisma.employeeAttendanceSchedule.findUnique({ where: { employeeId } });
-    return schedule ?? DEFAULT_SCHEDULE;
+    try {
+      const schedule = await prisma.employeeAttendanceSchedule.findUnique({ where: { employeeId } });
+      return schedule ?? DEFAULT_SCHEDULE;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("employee_attendance_schedules") && message.includes("does not exist")) {
+        console.warn("[AttendanceService] employee_attendance_schedules missing; fallback to default schedule");
+        return DEFAULT_SCHEDULE;
+      }
+      throw err;
+    }
   }
 
   static async setSchedule(input: z.infer<typeof setScheduleSchema>) {
