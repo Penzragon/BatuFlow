@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -10,30 +9,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface SummaryRow {
   employeeId: string;
@@ -42,262 +22,211 @@ interface SummaryRow {
   late: number;
   absent: number;
   halfDay: number;
-  days: Array<{ date: string; status: string; clockIn?: string; clockOut?: string }>;
+  earlyCheckout: number;
+  overtime: number;
+  days: Array<any>;
 }
 
 export default function AttendancePage() {
   const t = useTranslations("attendance");
-  const tc = useTranslations("common");
-
-  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
-  const [year, setYear] = useState(() => new Date().getFullYear());
-  const [summary, setSummary] = useState<{
-    byEmployee: SummaryRow[];
-    totalPresent: number;
-    totalLate: number;
-    totalAbsent: number;
-    totalHalfDay: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [month] = useState(() => new Date().getMonth() + 1);
+  const [year] = useState(() => new Date().getFullYear());
+  const [summary, setSummary] = useState<any>(null);
   const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
-  const [formOpen, setFormOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    employeeId: "",
-    date: format(new Date(), "yyyy-MM-dd"),
-    clockIn: "",
-    clockOut: "",
-    status: "PRESENT",
-    notes: "",
-  });
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("");
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailRecord, setDetailRecord] = useState<any>(null);
+  const [corrections, setCorrections] = useState<any[]>([]);
+  const [requestForm, setRequestForm] = useState({ attendanceId: "", requestedClockIn: "", requestedClockOut: "", reason: "" });
+  const [schedule, setSchedule] = useState({ startTime: "08:00", endTime: "17:00", lateToleranceMinutes: 5 });
 
-  const fetchSummary = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/attendance/summary?month=${month}&year=${year}`);
-      const json = await res.json();
-      if (json.success) setSummary(json.data);
-      else setSummary(null);
-    } catch {
-      toast.error("Failed to load attendance");
-      setSummary(null);
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = useCallback(async () => {
+    const [summaryRes, empRes, correctionRes] = await Promise.all([
+      fetch(`/api/attendance/summary?month=${month}&year=${year}`),
+      fetch("/api/employees?pageSize=500"),
+      fetch("/api/attendance/corrections"),
+    ]);
+    const [summaryJson, empJson, correctionJson] = await Promise.all([summaryRes.json(), empRes.json(), correctionRes.json()]);
+    if (summaryJson.success) setSummary(summaryJson.data);
+    if (empJson.success) setEmployees(empJson.data.items ?? []);
+    if (correctionJson.success) setCorrections(correctionJson.data ?? []);
   }, [month, year]);
 
-  const fetchEmployees = useCallback(async () => {
-    const res = await fetch("/api/employees?pageSize=500");
-    const json = await res.json();
-    if (json.success) setEmployees(json.data?.items ?? []);
-  }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const employeeRows: SummaryRow[] = summary?.byEmployee ?? [];
 
   useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
-
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-
-  const prevMonth = () => {
-    if (month === 1) {
-      setMonth(12);
-      setYear((y) => y - 1);
-    } else setMonth((m) => m - 1);
-  };
-
-  const nextMonth = () => {
-    if (month === 12) {
-      setMonth(1);
-      setYear((y) => y + 1);
-    } else setMonth((m) => m + 1);
-  };
-
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const dayHeaders = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  const handleSubmitRecord = async () => {
-    if (!formData.employeeId) {
-      toast.error("Select employee");
-      return;
-    }
-    setSaving(true);
-    try {
-      const clockIn = formData.clockIn ? `${formData.date}T${formData.clockIn}:00` : null;
-      const clockOut = formData.clockOut ? `${formData.date}T${formData.clockOut}:00` : null;
-      const res = await fetch("/api/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: formData.employeeId,
-          date: formData.date,
-          clockIn,
-          clockOut,
-          status: formData.status,
-          notes: formData.notes || null,
-        }),
+    if (!selectedEmployee) return;
+    fetch(`/api/attendance/schedules?employeeId=${selectedEmployee}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setSchedule(json.data);
       });
-      const json = await res.json();
-      if (json.success) {
-        toast.success("Attendance recorded");
-        setFormOpen(false);
-        fetchSummary();
-      } else {
-        toast.error(json.error ?? "Failed to save");
-      }
-    } catch {
-      toast.error("Failed to save");
-    } finally {
-      setSaving(false);
-    }
+  }, [selectedEmployee]);
+
+  const reportTotals = useMemo(() => ({
+    present: summary?.totalPresent ?? 0,
+    late: summary?.totalLate ?? 0,
+    earlyCheckout: summary?.totalEarlyCheckout ?? 0,
+    overtime: summary?.totalOvertime ?? 0,
+  }), [summary]);
+
+  const saveSchedule = async () => {
+    if (!selectedEmployee) return toast.error("Select employee first");
+    const res = await fetch("/api/attendance/schedules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId: selectedEmployee, ...schedule }),
+    });
+    const json = await res.json();
+    if (json.success) toast.success("Schedule updated");
+    else toast.error(json.error || "Failed");
   };
 
-  const getDayStatus = (row: SummaryRow, day: number) => {
-    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return row.days.find((d) => d.date === dateStr);
+  const submitCorrectionRequest = async () => {
+    const res = await fetch("/api/attendance/corrections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        attendanceId: requestForm.attendanceId,
+        requestedClockIn: requestForm.requestedClockIn ? new Date(requestForm.requestedClockIn).toISOString() : null,
+        requestedClockOut: requestForm.requestedClockOut ? new Date(requestForm.requestedClockOut).toISOString() : null,
+        reason: requestForm.reason,
+      }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      toast.success("Correction request submitted");
+      setRequestForm({ attendanceId: "", requestedClockIn: "", requestedClockOut: "", reason: "" });
+      fetchData();
+    } else toast.error(json.error || "Failed");
+  };
+
+  const reviewCorrection = async (id: string, action: "APPROVED" | "REJECTED") => {
+    const res = await fetch(`/api/attendance/corrections/${id}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      toast.success(`Correction ${action.toLowerCase()}`);
+      fetchData();
+    } else toast.error(json.error || "Failed");
   };
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("title")}
-        description={t("description")}
-        actions={
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("recordAttendance")}
-          </Button>
-        }
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={prevMonth}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="text-lg font-semibold min-w-[180px] text-center">
-          {format(new Date(year, month - 1, 1), "MMMM yyyy")}
-        </h2>
-        <Button variant="outline" size="icon" onClick={nextMonth}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <Tabs defaultValue="report">
+        <TabsList>
+          <TabsTrigger value="report">Report</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="schedule">Schedules</TabsTrigger>
+          <TabsTrigger value="correction">Corrections</TabsTrigger>
+        </TabsList>
 
-      {summary && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("monthlySummary")}</CardTitle>
-            <div className="flex gap-4 text-sm">
-              <span>{t("totalPresent")}: {summary.totalPresent}</span>
-              <span>{t("totalLate")}: {summary.totalLate}</span>
-              <span>{t("totalAbsent")}: {summary.totalAbsent}</span>
-              <span>{t("totalHalfDay")}: {summary.totalHalfDay}</span>
-            </div>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            {loading ? (
-              <p>{tc("loading")}</p>
-            ) : !summary.byEmployee?.length ? (
-              <p className="text-muted-foreground">{t("noRecords")}</p>
-            ) : (
+        <TabsContent value="report">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card><CardHeader><CardTitle>Present</CardTitle></CardHeader><CardContent>{reportTotals.present}</CardContent></Card>
+            <Card><CardHeader><CardTitle>Late</CardTitle></CardHeader><CardContent>{reportTotals.late}</CardContent></Card>
+            <Card><CardHeader><CardTitle>Early Checkout</CardTitle></CardHeader><CardContent>{reportTotals.earlyCheckout}</CardContent></Card>
+            <Card><CardHeader><CardTitle>Overtime</CardTitle></CardHeader><CardContent>{reportTotals.overtime}</CardContent></Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="details">
+          <Card>
+            <CardHeader><CardTitle>Attendance Details ({format(new Date(year, month - 1, 1), "MMMM yyyy")})</CardTitle></CardHeader>
+            <CardContent>
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px] sticky left-0 bg-background">{t("employee")}</TableHead>
-                    {dayHeaders.map((d) => (
-                      <TableHead key={d} className="text-center w-10 px-1">{d}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
+                <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Present</TableHead><TableHead>Late</TableHead><TableHead>Early</TableHead><TableHead>Overtime</TableHead><TableHead /></TableRow></TableHeader>
                 <TableBody>
-                  {(summary.byEmployee ?? []).map((row) => (
-                    <TableRow key={row.employeeId}>
-                      <TableCell className="font-medium sticky left-0 bg-background">{row.employeeName}</TableCell>
-                      {dayHeaders.map((day) => {
-                        const rec = getDayStatus(row, day);
-                        return (
-                          <TableCell key={day} className="text-center p-1">
-                            {rec ? (
-                              <StatusBadge status={rec.status} />
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        );
-                      })}
+                  {employeeRows.map((r) => (
+                    <TableRow key={r.employeeId}>
+                      <TableCell>{r.employeeName}</TableCell>
+                      <TableCell>{r.present}</TableCell>
+                      <TableCell>{r.late}</TableCell>
+                      <TableCell>{r.earlyCheckout}</TableCell>
+                      <TableCell>{r.overtime}</TableCell>
+                      <TableCell><Button size="sm" variant="outline" onClick={() => { setDetailRecord(r.days[0] || null); setDetailOpen(true); }}>View latest</Button></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("manualEntry")}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label>{t("employee")}</Label>
-              <Select value={formData.employeeId} onValueChange={(v) => setFormData((p) => ({ ...p, employeeId: v }))}>
-                <SelectTrigger><SelectValue placeholder={t("employee")} /></SelectTrigger>
-                <SelectContent>
-                  {(employees ?? []).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+        <TabsContent value="schedule">
+          <Card>
+            <CardHeader><CardTitle>Employee Schedule</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <Label>Employee</Label>
+              <select className="w-full border rounded h-9 px-2" value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
+                <option value="">Select</option>
+                {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>Start</Label><Input type="time" value={schedule.startTime} onChange={(e) => setSchedule((s) => ({ ...s, startTime: e.target.value }))} /></div>
+                <div><Label>End</Label><Input type="time" value={schedule.endTime} onChange={(e) => setSchedule((s) => ({ ...s, endTime: e.target.value }))} /></div>
+                <div><Label>Late tolerance (min)</Label><Input type="number" value={schedule.lateToleranceMinutes} onChange={(e) => setSchedule((s) => ({ ...s, lateToleranceMinutes: Number(e.target.value) }))} /></div>
+              </div>
+              <Button onClick={saveSchedule}>Save schedule</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="correction">
+          <Card>
+            <CardHeader><CardTitle>Attendance Correction Requests</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <Input placeholder="Attendance ID" value={requestForm.attendanceId} onChange={(e) => setRequestForm((p) => ({ ...p, attendanceId: e.target.value }))} />
+                <Input type="datetime-local" value={requestForm.requestedClockIn} onChange={(e) => setRequestForm((p) => ({ ...p, requestedClockIn: e.target.value }))} />
+                <Input type="datetime-local" value={requestForm.requestedClockOut} onChange={(e) => setRequestForm((p) => ({ ...p, requestedClockOut: e.target.value }))} />
+                <Input placeholder="Reason" value={requestForm.reason} onChange={(e) => setRequestForm((p) => ({ ...p, reason: e.target.value }))} />
+              </div>
+              <Button onClick={submitCorrectionRequest}>Request correction</Button>
+              <Table>
+                <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>Reason</TableHead><TableHead /></TableRow></TableHeader>
+                <TableBody>
+                  {corrections.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell>{c.employee?.name}</TableCell>
+                      <TableCell>{c.attendance?.date ? format(new Date(c.attendance.date), "yyyy-MM-dd") : "-"}</TableCell>
+                      <TableCell><StatusBadge status={c.status} /></TableCell>
+                      <TableCell>{c.reason}</TableCell>
+                      <TableCell className="space-x-2">
+                        {c.status === "PENDING" && <>
+                          <Button size="sm" onClick={() => reviewCorrection(c.id, "APPROVED")}>Approve</Button>
+                          <Button size="sm" variant="destructive" onClick={() => reviewCorrection(c.id, "REJECTED")}>Reject</Button>
+                        </>}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </SelectContent>
-              </Select>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Attendance Detail</DialogTitle></DialogHeader>
+          {detailRecord ? (
+            <div className="space-y-2 text-sm">
+              <p>Date: {detailRecord.date}</p>
+              <p>Clock In: {detailRecord.clockIn ? new Date(detailRecord.clockIn).toLocaleString() : "-"}</p>
+              <p>Clock Out: {detailRecord.clockOut ? new Date(detailRecord.clockOut).toLocaleString() : "-"}</p>
+              <p>GPS In: {detailRecord.checkInLatitude ?? "-"}, {detailRecord.checkInLongitude ?? "-"}</p>
+              <p>GPS Out: {detailRecord.checkOutLatitude ?? "-"}, {detailRecord.checkOutLongitude ?? "-"}</p>
+              {detailRecord.checkInSelfieUrl && <img src={detailRecord.checkInSelfieUrl} alt="check-in selfie" className="rounded border" />}
             </div>
-            <div>
-              <Label>{t("date")}</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData((p) => ({ ...p, date: e.target.value }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>{t("clockIn")}</Label>
-                <Input
-                  type="time"
-                  value={formData.clockIn}
-                  onChange={(e) => setFormData((p) => ({ ...p, clockIn: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>{t("clockOut")}</Label>
-                <Input
-                  type="time"
-                  value={formData.clockOut}
-                  onChange={(e) => setFormData((p) => ({ ...p, clockOut: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>{t("status")}</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData((p) => ({ ...p, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PRESENT">{t("present")}</SelectItem>
-                  <SelectItem value="LATE">{t("late")}</SelectItem>
-                  <SelectItem value="ABSENT">{t("absent")}</SelectItem>
-                  <SelectItem value="HALF_DAY">{t("halfDay")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t("notes")}</Label>
-              <Input value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>{tc("cancel")}</Button>
-            <Button onClick={handleSubmitRecord} disabled={saving}>{saving ? tc("loading") : tc("save")}</Button>
-          </DialogFooter>
+          ) : <p>No detail.</p>}
         </DialogContent>
       </Dialog>
     </div>
