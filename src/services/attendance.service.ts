@@ -151,14 +151,27 @@ export class AttendanceService {
       } catch (err) {
         if (!isMissingColumnError(err, "late_minutes")) throw err;
         console.warn("[AttendanceService] attendance new columns missing; fallback update payload");
-        return prisma.attendance.update({
+        await prisma.$executeRaw`
+          update attendance
+          set clock_in = ${now}, status = ${status}::attendance_status, notes = ${null}, updated_at = now()
+          where id = ${existing.id}
+        `;
+        const updated = await prisma.attendance.findUnique({
           where: { id: existing.id },
-          data: {
-            clockIn: now,
-            status,
-            notes: null,
+          select: {
+            id: true,
+            employeeId: true,
+            date: true,
+            clockIn: true,
+            clockOut: true,
+            status: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
+        if (!updated) throw new Error("Failed to update attendance fallback record");
+        return updated as unknown as Attendance;
       }
     }
 
@@ -173,15 +186,27 @@ export class AttendanceService {
     } catch (err) {
       if (!isMissingColumnError(err, "late_minutes")) throw err;
       console.warn("[AttendanceService] attendance new columns missing; fallback create payload");
-      return prisma.attendance.create({
-        data: {
-          employeeId: payload.employeeId,
-          date,
-          clockIn: now,
-          status,
-          notes: null,
+      await prisma.$executeRaw`
+        insert into attendance (employee_id, date, clock_in, status, notes, created_at, updated_at)
+        values (${payload.employeeId}, ${date}, ${now}, ${status}::attendance_status, ${null}, now(), now())
+      `;
+      const created = await prisma.attendance.findFirst({
+        where: { employeeId: payload.employeeId, date },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          employeeId: true,
+          date: true,
+          clockIn: true,
+          clockOut: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
+      if (!created) throw new Error("Failed to create attendance fallback record");
+      return created as unknown as Attendance;
     }
   }
 
@@ -219,12 +244,27 @@ export class AttendanceService {
         throw err;
       }
       console.warn("[AttendanceService] attendance checkout new columns missing; fallback update payload");
-      return prisma.attendance.update({
+      await prisma.$executeRaw`
+        update attendance
+        set clock_out = ${now}, updated_at = now()
+        where id = ${existing.id}
+      `;
+      const updated = await prisma.attendance.findUnique({
         where: { id: existing.id },
-        data: {
-          clockOut: now,
+        select: {
+          id: true,
+          employeeId: true,
+          date: true,
+          clockIn: true,
+          clockOut: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
+      if (!updated) throw new Error("Failed to update attendance fallback record");
+      return updated as unknown as Attendance;
     }
   }
 
