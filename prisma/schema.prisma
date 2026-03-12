@@ -58,6 +58,7 @@ model User {
   assignedLeads       Lead[]            @relation("LeadAssignee")
   activities          CustomerActivity[] @relation("UserActivities")
   salesTargets        SalesTarget[]      @relation("SalesTargets")
+  reviewedAttendanceCorrections AttendanceCorrectionRequest[] @relation("AttendanceCorrectionReviewedBy")
 
   @@map("users")
 }
@@ -906,10 +907,12 @@ model Employee {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  user         User?           @relation(fields: [userId], references: [id])
-  attendance   Attendance[]
-  leaveRequests LeaveRequest[]
-  payrollLines PayrollLine[]
+  user                   User?                        @relation(fields: [userId], references: [id])
+  attendance             Attendance[]
+  leaveRequests          LeaveRequest[]
+  payrollLines           PayrollLine[]
+  attendanceSchedule     EmployeeAttendanceSchedule?
+  attendanceCorrections  AttendanceCorrectionRequest[]
 
   @@map("employees")
 }
@@ -937,6 +940,14 @@ enum AttendanceStatus {
   @@map("attendance_status")
 }
 
+enum AttendanceCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("attendance_correction_status")
+}
+
 enum LeaveType {
   ANNUAL
   SICK
@@ -962,21 +973,73 @@ enum PayrollStatus {
 }
 
 model Attendance {
-  id         String           @id @default(uuid())
-  employeeId String          @map("employee_id")
-  date       DateTime        @db.Date
-  clockIn    DateTime?       @map("clock_in")
-  clockOut   DateTime?       @map("clock_out")
-  status     AttendanceStatus @default(PRESENT)
-  notes      String?
-  createdAt  DateTime        @default(now()) @map("created_at")
+  id               String           @id @default(uuid())
+  employeeId       String           @map("employee_id")
+  date             DateTime         @db.Date
+  clockIn          DateTime?        @map("clock_in")
+  clockOut         DateTime?        @map("clock_out")
+  status           AttendanceStatus @default(PRESENT)
+  notes            String?
+  lateMinutes      Int              @default(0) @map("late_minutes")
+  isEarlyCheckout  Boolean          @default(false) @map("is_early_checkout")
+  isOvertime       Boolean          @default(false) @map("is_overtime")
+  checkInSelfieUrl String?          @map("check_in_selfie_url")
+  checkOutSelfieUrl String?         @map("check_out_selfie_url")
+  checkInLatitude  Float?           @map("check_in_latitude")
+  checkInLongitude Float?           @map("check_in_longitude")
+  checkInAccuracy  Float?           @map("check_in_accuracy")
+  checkOutLatitude Float?           @map("check_out_latitude")
+  checkOutLongitude Float?          @map("check_out_longitude")
+  checkOutAccuracy Float?           @map("check_out_accuracy")
+  scheduleStart    String           @default("08:00") @map("schedule_start")
+  scheduleEnd      String           @default("17:00") @map("schedule_end")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee            Employee                      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  correctionRequests  AttendanceCorrectionRequest[]
 
   @@unique([employeeId, date])
   @@index([employeeId])
   @@index([date])
   @@map("attendance")
+}
+
+model EmployeeAttendanceSchedule {
+  id          String   @id @default(uuid())
+  employeeId  String   @unique @map("employee_id")
+  startTime   String   @default("08:00") @map("start_time")
+  endTime     String   @default("17:00") @map("end_time")
+  lateToleranceMinutes Int @default(5) @map("late_tolerance_minutes")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_attendance_schedules")
+}
+
+model AttendanceCorrectionRequest {
+  id                String                     @id @default(uuid())
+  attendanceId      String                     @map("attendance_id")
+  employeeId        String                     @map("employee_id")
+  requestedClockIn  DateTime?                  @map("requested_clock_in")
+  requestedClockOut DateTime?                  @map("requested_clock_out")
+  reason            String
+  status            AttendanceCorrectionStatus @default(PENDING)
+  reviewedBy        String?                    @map("reviewed_by")
+  reviewedAt        DateTime?                  @map("reviewed_at")
+  rejectionReason   String?                    @map("rejection_reason")
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer   User?      @relation("AttendanceCorrectionReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@index([employeeId, status])
+  @@index([attendanceId])
+  @@map("attendance_correction_requests")
 }
 
 model LeaveRequest {
