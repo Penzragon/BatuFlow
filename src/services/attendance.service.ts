@@ -125,6 +125,7 @@ export class AttendanceService {
 
     const existing = await prisma.attendance.findUnique({
       where: { employeeId_date: { employeeId: payload.employeeId, date } },
+      select: { id: true },
     });
 
     const data = {
@@ -158,10 +159,12 @@ export class AttendanceService {
 
     const existing = await prisma.attendance.findUnique({
       where: { employeeId_date: { employeeId: payload.employeeId, date } },
+      select: { id: true, clockIn: true },
     });
     if (!existing || !existing.clockIn) throw new Error("No clock-in record found for today");
 
-    const shiftEnd = atLocalDateWithTime(date, existing.scheduleEnd || DEFAULT_SCHEDULE.endTime);
+    const schedule = await this.getSchedule(payload.employeeId);
+    const shiftEnd = atLocalDateWithTime(date, schedule.endTime || DEFAULT_SCHEDULE.endTime);
     const isEarlyCheckout = now < shiftEnd;
     const isOvertime = now > shiftEnd;
     const selfieUrl = await this.processSelfie(payload.selfieBuffer);
@@ -191,6 +194,7 @@ export class AttendanceService {
     const date = normalizeDateOnly(new Date());
     const attendance = await prisma.attendance.findUnique({
       where: { employeeId_date: { employeeId: employee.id, date } },
+      select: { id: true, clockIn: true, clockOut: true },
     });
 
     return {
