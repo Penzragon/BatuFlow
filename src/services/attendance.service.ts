@@ -68,6 +68,11 @@ interface ClockPayload {
   selfieBuffer: Buffer;
 }
 
+function isMissingColumnError(err: unknown, column: string): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes(column) && message.includes("does not exist");
+}
+
 export class AttendanceService {
   static async getSchedule(employeeId: string) {
     try {
@@ -141,16 +146,43 @@ export class AttendanceService {
     };
 
     if (existing) {
-      return prisma.attendance.update({ where: { id: existing.id }, data });
+      try {
+        return await prisma.attendance.update({ where: { id: existing.id }, data });
+      } catch (err) {
+        if (!isMissingColumnError(err, "late_minutes")) throw err;
+        console.warn("[AttendanceService] attendance new columns missing; fallback update payload");
+        return prisma.attendance.update({
+          where: { id: existing.id },
+          data: {
+            clockIn: now,
+            status,
+            notes: null,
+          },
+        });
+      }
     }
 
-    return prisma.attendance.create({
-      data: {
-        employeeId: payload.employeeId,
-        date,
-        ...data,
-      },
-    });
+    try {
+      return await prisma.attendance.create({
+        data: {
+          employeeId: payload.employeeId,
+          date,
+          ...data,
+        },
+      });
+    } catch (err) {
+      if (!isMissingColumnError(err, "late_minutes")) throw err;
+      console.warn("[AttendanceService] attendance new columns missing; fallback create payload");
+      return prisma.attendance.create({
+        data: {
+          employeeId: payload.employeeId,
+          date,
+          clockIn: now,
+          status,
+          notes: null,
+        },
+      });
+    }
   }
 
   static async clockOut(payload: ClockPayload): Promise<Attendance> {
@@ -169,18 +201,31 @@ export class AttendanceService {
     const isOvertime = now > shiftEnd;
     const selfieUrl = await this.processSelfie(payload.selfieBuffer);
 
-    return prisma.attendance.update({
-      where: { id: existing.id },
-      data: {
-        clockOut: now,
-        isEarlyCheckout,
-        isOvertime,
-        checkOutSelfieUrl: selfieUrl,
-        checkOutLatitude: payload.latitude,
-        checkOutLongitude: payload.longitude,
-        checkOutAccuracy: payload.accuracy ?? null,
-      },
-    });
+    try {
+      return await prisma.attendance.update({
+        where: { id: existing.id },
+        data: {
+          clockOut: now,
+          isEarlyCheckout,
+          isOvertime,
+          checkOutSelfieUrl: selfieUrl,
+          checkOutLatitude: payload.latitude,
+          checkOutLongitude: payload.longitude,
+          checkOutAccuracy: payload.accuracy ?? null,
+        },
+      });
+    } catch (err) {
+      if (!isMissingColumnError(err, "is_early_checkout") && !isMissingColumnError(err, "check_out_selfie_url")) {
+        throw err;
+      }
+      console.warn("[AttendanceService] attendance checkout new columns missing; fallback update payload");
+      return prisma.attendance.update({
+        where: { id: existing.id },
+        data: {
+          clockOut: now,
+        },
+      });
+    }
   }
 
   static async getTodayStatusByUser(userId: string) {
