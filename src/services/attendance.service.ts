@@ -73,6 +73,25 @@ function isMissingColumnError(err: unknown, column: string): boolean {
   return message.includes(column) && message.includes("does not exist");
 }
 
+function runtimeDbHost(): string {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.DATABASE_URL_UNPOOLED,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.POSTGRES_PRISMA_URL,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    try {
+      return new URL(c).host;
+    } catch {
+      continue;
+    }
+  }
+  return "unknown-host";
+}
+
 export class AttendanceService {
   static async getSchedule(employeeId: string) {
     try {
@@ -81,7 +100,7 @@ export class AttendanceService {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("employee_attendance_schedules") && message.includes("does not exist")) {
-        console.warn("[AttendanceService] employee_attendance_schedules missing; fallback to default schedule");
+        console.warn(`[AttendanceService] employee_attendance_schedules missing; fallback to default schedule (db=${runtimeDbHost()})`);
         return DEFAULT_SCHEDULE;
       }
       throw err;
@@ -150,7 +169,7 @@ export class AttendanceService {
         return await prisma.attendance.update({ where: { id: existing.id }, data });
       } catch (err) {
         if (!isMissingColumnError(err, "late_minutes")) throw err;
-        console.warn("[AttendanceService] attendance new columns missing; fallback update payload");
+        console.warn(`[AttendanceService] attendance new columns missing; fallback update payload (db=${runtimeDbHost()})`);
         await prisma.$executeRaw`
           update attendance
           set clock_in = ${now}, status = ${status}::attendance_status, notes = ${null}, updated_at = now()
@@ -185,7 +204,7 @@ export class AttendanceService {
       });
     } catch (err) {
       if (!isMissingColumnError(err, "late_minutes")) throw err;
-      console.warn("[AttendanceService] attendance new columns missing; fallback create payload");
+      console.warn(`[AttendanceService] attendance new columns missing; fallback create payload (db=${runtimeDbHost()})`);
       await prisma.$executeRaw`
         insert into attendance (employee_id, date, clock_in, status, notes, created_at, updated_at)
         values (${payload.employeeId}, ${date}, ${now}, ${status}::attendance_status, ${null}, now(), now())
@@ -243,7 +262,7 @@ export class AttendanceService {
       if (!isMissingColumnError(err, "is_early_checkout") && !isMissingColumnError(err, "check_out_selfie_url")) {
         throw err;
       }
-      console.warn("[AttendanceService] attendance checkout new columns missing; fallback update payload");
+      console.warn(`[AttendanceService] attendance checkout new columns missing; fallback update payload (db=${runtimeDbHost()})`);
       await prisma.$executeRaw`
         update attendance
         set clock_out = ${now}, updated_at = now()
