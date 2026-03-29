@@ -2,6 +2,9 @@ import { apiHandler, errorResponse, successResponse } from "@/lib/api-utils";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { AttendanceService } from "@/services/attendance.service";
 
+/** Prisma + `sharp` in AttendanceService require Node (not Edge). */
+export const runtime = "nodejs";
+
 export const POST = apiHandler(async (req: Request) => {
   const user = await getCurrentUser();
   const formData = await req.formData();
