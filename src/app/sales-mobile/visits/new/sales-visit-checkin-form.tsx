@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Camera, MapPin, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
+import { dataUrlToBlob, drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
 
 interface CustomerOption {
   id: string;
@@ -227,7 +227,7 @@ export default function SalesVisitCheckInForm({
       formData.append("gpsAccuracy", String(gps.accuracy));
       if (notes.trim()) formData.append("notes", notes.trim());
 
-      const blob = await (await fetch(selfieData)).blob();
+      const blob = dataUrlToBlob(selfieData);
       formData.append("selfie", blob, "checkin.jpg");
 
       const res = await fetch("/api/visits/check-in", {

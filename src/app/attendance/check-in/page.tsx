@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
+import { dataUrlToBlob, drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
 
 interface GateStatus {
   hasEmployee: boolean;
@@ -156,16 +156,26 @@ export default function AttendanceCheckInPage() {
 
     setLoading(true);
     try {
+      const blob = dataUrlToBlob(selfieData);
+      if (blob.size === 0) {
+        throw new Error(t("errors.photoRequired"));
+      }
+
       const fd = new FormData();
       fd.append("latitude", String(gps.lat));
       fd.append("longitude", String(gps.lng));
       fd.append("accuracy", String(gps.accuracy));
-      const blob = await (await fetch(selfieData)).blob();
       fd.append("selfie", blob, `${type}.jpg`);
 
       const res = await fetch(`/api/attendance/${type}`, { method: "POST", body: fd });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || t("errors.actionFailed"));
+      const raw = await res.text();
+      let json: { success?: boolean; error?: string } = {};
+      try {
+        json = JSON.parse(raw) as typeof json;
+      } catch {
+        throw new Error(raw.slice(0, 200) || t("errors.actionFailed"));
+      }
+      if (!res.ok || !json.success) throw new Error(json.error || t("errors.actionFailed"));
       toast.success(type === "clock-in" ? t("successClockIn") : t("successClockOut"));
       setSelfieData(null);
       await refreshStatus();

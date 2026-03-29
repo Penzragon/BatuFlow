@@ -33,7 +33,7 @@ export const POST = apiHandler(async (req: Request) => {
 async function getEmployeeIdForUser(userId: string): Promise<string | null> {
   const { prisma } = await import("@/lib/db");
   const emp = await prisma.employee.findFirst({
-    where: { userId, deletedAt: null },
+    where: { userId, deletedAt: null, status: "ACTIVE" },
     select: { id: true },
   });
   return emp?.id ?? null;

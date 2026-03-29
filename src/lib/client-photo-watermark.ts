@@ -13,6 +13,32 @@ export function formatPhotoCaptionTimestamp(date: Date = new Date()): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} WIB`;
 }
 
+/**
+ * Converts a `data:` URL (e.g. from canvas ` toDataURL`) to a Blob without `fetch(dataUrl)`,
+ * which is unreliable or blocked in some browsers when uploading attendance/visit photos via FormData.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(",");
+  if (comma === -1 || !dataUrl.startsWith("data:")) {
+    throw new Error("Invalid data URL");
+  }
+  const header = dataUrl.slice(0, comma);
+  const body = dataUrl.slice(comma + 1);
+  const mimeMatch = header.match(/^data:([^;,]+)/i);
+  const mime = mimeMatch?.[1]?.trim() ?? "image/jpeg";
+  const isBase64 = /;base64/i.test(header);
+
+  if (isBase64) {
+    const binary = atob(body);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  return new Blob([decodeURIComponent(body)], { type: mime });
+}
+
 interface DrawCaptionOptions {
   line1: string;
   line2: string;
