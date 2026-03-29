@@ -9,7 +9,14 @@ import type {
   UserRole,
 } from "@prisma/client";
 
-const DEFAULT_SCHEDULE = {
+/** Shift window used for late / early-checkout rules and stored on attendance rows. */
+export type AttendanceScheduleWindow = {
+  startTime: string;
+  endTime: string;
+  lateToleranceMinutes: number;
+};
+
+const DEFAULT_SCHEDULE: AttendanceScheduleWindow = {
   startTime: "08:00",
   endTime: "17:00",
   lateToleranceMinutes: 5,
@@ -70,12 +77,39 @@ interface ClockPayload {
 
 export class AttendanceService {
   /**
-   * Returns the saved shift for an employee, or default office hours when none exists.
-   * Requires `employee_attendance_schedules` — apply prisma/migrations/20260329120000_attendance_schema_prisma_align.sql if needed.
+   * Reads custom shift from `employee_attendance_schedules` via a plain SQL SELECT, then falls back
+   * to default hours if the row is missing or the table is unavailable (avoids hard failures on
+   * `prisma.employeeAttendanceSchedule` when the live DB is out of sync with Prisma’s expectations).
    */
-  static async getSchedule(employeeId: string) {
-    const schedule = await prisma.employeeAttendanceSchedule.findUnique({ where: { employeeId } });
-    return schedule ?? DEFAULT_SCHEDULE;
+  static async getSchedule(employeeId: string): Promise<AttendanceScheduleWindow> {
+    try {
+      const rows = await prisma.$queryRaw<
+        Array<{
+          start_time: string;
+          end_time: string;
+          late_tolerance_minutes: number;
+        }>
+      >`
+        SELECT start_time, end_time, late_tolerance_minutes
+        FROM employee_attendance_schedules
+        WHERE employee_id = ${employeeId}
+        LIMIT 1
+      `;
+      const row = rows[0];
+      if (row) {
+        return {
+          startTime: row.start_time,
+          endTime: row.end_time,
+          lateToleranceMinutes: row.late_tolerance_minutes,
+        };
+      }
+    } catch (err) {
+      console.warn("[AttendanceService] getSchedule fallback to defaults", {
+        employeeId,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+    return DEFAULT_SCHEDULE;
   }
 
   static async setSchedule(input: z.infer<typeof setScheduleSchema>) {
