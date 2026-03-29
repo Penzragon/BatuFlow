@@ -1150,7 +1150,107 @@
     "totalAbsent": "Total Tidak Hadir",
     "totalHalfDay": "Total Setengah Hari",
     "noRecords": "Tidak ada data kehadiran",
-    "searchPlaceholder": "Cari..."
+    "searchPlaceholder": "Cari...",
+    "tabs": {
+      "report": "Laporan",
+      "details": "Detail",
+      "schedule": "Jadwal",
+      "correction": "Koreksi",
+      "manual": "Entri manual"
+    },
+    "report": {
+      "earlyCheckout": "Pulang awal",
+      "overtime": "Lembur"
+    },
+    "details": {
+      "title": "Detail kehadiran",
+      "absent": "Tidak hadir",
+      "halfDay": "Setengah hari",
+      "viewDays": "Lihat hari",
+      "dayListTitle": "Rekaman harian",
+      "noDays": "Tidak ada data bulan ini",
+      "lateMin": "Telat (menit)"
+    },
+    "schedule": {
+      "title": "Jadwal karyawan",
+      "selectEmployee": "Pilih karyawan",
+      "start": "Mulai",
+      "end": "Selesai",
+      "lateTolerance": "Toleransi telat (mnt)",
+      "save": "Simpan jadwal",
+      "selectFirst": "Pilih karyawan dulu",
+      "updated": "Jadwal diperbarui",
+      "failed": "Gagal menyimpan jadwal"
+    },
+    "correction": {
+      "title": "Permintaan koreksi",
+      "selectRecord": "Hari kehadiran",
+      "pickRecord": "Pilih rekaman",
+      "loadRecords": "Muat hari",
+      "request": "Kirim permintaan",
+      "submitted": "Permintaan koreksi terkirim",
+      "failed": "Permintaan gagal",
+      "approve": "Setujui",
+      "reject": "Tolak",
+      "reviewed": "Koreksi diperbarui",
+      "noLinkedEmployee": "Pengguna Anda tidak terhubung ke data karyawan. Tidak dapat mengajukan koreksi.",
+      "needRecord": "Pilih rekaman kehadiran",
+      "requestHint": "Permintaan hanya untuk kehadiran Anda sendiri. Masuk sebagai: {name}."
+    },
+    "manual": {
+      "title": "Kehadiran manual",
+      "hint": "Untuk HR: catat hadir, telat, tidak hadir, atau setengah hari tanpa clock.",
+      "submit": "Simpan rekaman",
+      "saved": "Kehadiran disimpan",
+      "failed": "Gagal menyimpan"
+    },
+    "gate": {
+      "title": "Check-in kehadiran",
+      "subtitle": "Check-in wajib sebelum mengakses BatuFlow.",
+      "checkedInLabel": "Sudah check-in",
+      "checkedOutLabel": "Sudah check-out",
+      "yes": "Ya",
+      "no": "Tidak",
+      "loading": "Memuat status…",
+      "noEmployee": "Tidak ada profil karyawan aktif untuk akun Anda. Hubungi HR.",
+      "clockIn": "Check-in",
+      "clockOut": "Check-out",
+      "successClockIn": "Check-in berhasil",
+      "successClockOut": "Check-out berhasil",
+      "watermarkIn": "CLOCK_IN",
+      "watermarkOut": "CLOCK_OUT",
+      "gps": {
+        "title": "GPS",
+        "refresh": "Muat ulang",
+        "loading": "Mengambil GPS...",
+        "accuracy": "Akurasi: ±{meters} m",
+        "notCaptured": "GPS belum diambil",
+        "retry": "Coba GPS lagi",
+        "retryHint": "Izinkan akses Lokasi lalu ketuk muat ulang.",
+        "softAccuracyWarning": "Akurasi GPS rendah (±{meters} m). Pindah ke area terbuka jika perlu."
+      },
+      "photo": {
+        "title": "Foto",
+        "selectActionFirst": "Pilih check-in atau check-out dulu.",
+        "startCamera": "Buka kamera",
+        "capture": "Ambil foto",
+        "retake": "Ulangi",
+        "previewAlt": "Pratinjau foto kehadiran",
+        "retryCamera": "Coba kamera lagi",
+        "retryHint": "Izinkan Kamera lalu coba lagi."
+      },
+      "errors": {
+        "geolocation": "Geolokasi tidak tersedia",
+        "gpsFailed": "Gagal mengambil GPS",
+        "cameraFailed": "Gagal membuka kamera",
+        "gpsRequired": "GPS wajib",
+        "photoRequired": "Foto wajib",
+        "cameraPermission": "Izin kamera diblokir. Izinkan akses kamera.",
+        "gpsPermission": "Izin lokasi diblokir. Aktifkan lokasi lalu coba lagi.",
+        "gpsTimeout": "GPS habis waktu. Pindah ke area terbuka lalu coba lagi.",
+        "actionFailed": "Aksi gagal"
+      }
+    }
   },
   "leave": {
     "title": "Permintaan Cuti",
