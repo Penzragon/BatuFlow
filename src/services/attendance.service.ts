@@ -73,6 +73,73 @@ function isMissingColumnError(err: unknown, column: string): boolean {
   return message.includes(column) && message.includes("does not exist");
 }
 
+/**
+ * Detects Prisma/Postgres errors when the physical `attendance` table is behind the Prisma schema
+ * (missing columns such as late_minutes, check_in_selfie_url, or created_at/updated_at).
+ */
+function isAttendanceColumnMissingError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  if (!message.includes("does not exist")) return false;
+  if (/column .+ of relation "attendance" does not exist/i.test(message)) return true;
+  if (/column `[^`]+` does not exist in the current database/i.test(message)) return true;
+  return false;
+}
+
+/** Calendar date YYYY-MM-DD in local time for raw SQL ::date casts. */
+function formatPgDateOnly(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Load attendance by id using only core columns (works on older DBs without audit/timestamp columns). */
+async function fetchAttendanceMinimalById(id: string): Promise<Attendance> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      employee_id: string;
+      date: Date;
+      clock_in: Date | null;
+      clock_out: Date | null;
+      status: AttendanceStatus;
+      notes: string | null;
+    }>
+  >`
+    select id, employee_id, date, clock_in, clock_out, status, notes
+    from attendance
+    where id = ${id}::uuid
+  `;
+  const r = rows[0];
+  if (!r) throw new Error("Attendance record not found after write");
+
+  const fallbackNow = new Date();
+  return {
+    id: r.id,
+    employeeId: r.employee_id,
+    date: r.date,
+    clockIn: r.clock_in,
+    clockOut: r.clock_out,
+    status: r.status,
+    notes: r.notes,
+    lateMinutes: 0,
+    isEarlyCheckout: false,
+    isOvertime: false,
+    checkInSelfieUrl: null,
+    checkOutSelfieUrl: null,
+    checkInLatitude: null,
+    checkInLongitude: null,
+    checkInAccuracy: null,
+    checkOutLatitude: null,
+    checkOutLongitude: null,
+    checkOutAccuracy: null,
+    scheduleStart: "08:00",
+    scheduleEnd: "17:00",
+    createdAt: fallbackNow,
+    updatedAt: fallbackNow,
+  };
+}
+
 function runtimeDbHost(): string {
   const candidates = [
     process.env.DATABASE_URL,
@@ -168,29 +235,15 @@ export class AttendanceService {
       try {
         return await prisma.attendance.update({ where: { id: existing.id }, data });
       } catch (err) {
-        if (!isMissingColumnError(err, "late_minutes")) throw err;
+        if (!isAttendanceColumnMissingError(err)) throw err;
         console.warn(`[AttendanceService] attendance new columns missing; fallback update payload (db=${runtimeDbHost()})`);
+        // Omit created_at/updated_at — some preview DBs predate those columns.
         await prisma.$executeRaw`
           update attendance
-          set clock_in = ${now}, status = ${status}::attendance_status, notes = ${null}, updated_at = now()
-          where id = ${existing.id}
+          set clock_in = ${now}, status = ${status}::attendance_status, notes = ${null}
+          where id = ${existing.id}::uuid
         `;
-        const updated = await prisma.attendance.findUnique({
-          where: { id: existing.id },
-          select: {
-            id: true,
-            employeeId: true,
-            date: true,
-            clockIn: true,
-            clockOut: true,
-            status: true,
-            notes: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
-        if (!updated) throw new Error("Failed to update attendance fallback record");
-        return updated as unknown as Attendance;
+        return fetchAttendanceMinimalById(existing.id);
       }
     }
 
@@ -203,29 +256,17 @@ export class AttendanceService {
         },
       });
     } catch (err) {
-      if (!isMissingColumnError(err, "late_minutes")) throw err;
+      if (!isAttendanceColumnMissingError(err)) throw err;
       console.warn(`[AttendanceService] attendance new columns missing; fallback create payload (db=${runtimeDbHost()})`);
-      await prisma.$executeRaw`
-        insert into attendance (employee_id, date, clock_in, status, notes, created_at, updated_at)
-        values (${payload.employeeId}, ${date}, ${now}, ${status}::attendance_status, ${null}, now(), now())
+      const dateStr = formatPgDateOnly(date);
+      const inserted = await prisma.$queryRaw<Array<{ id: string }>>`
+        insert into attendance (employee_id, date, clock_in, status, notes)
+        values (${payload.employeeId}::uuid, ${dateStr}::date, ${now}, ${status}::attendance_status, null)
+        returning id
       `;
-      const created = await prisma.attendance.findFirst({
-        where: { employeeId: payload.employeeId, date },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          employeeId: true,
-          date: true,
-          clockIn: true,
-          clockOut: true,
-          status: true,
-          notes: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      if (!created) throw new Error("Failed to create attendance fallback record");
-      return created as unknown as Attendance;
+      const newId = inserted[0]?.id;
+      if (!newId) throw new Error("Failed to create attendance fallback record");
+      return fetchAttendanceMinimalById(newId);
     }
   }
 
@@ -259,31 +300,19 @@ export class AttendanceService {
         },
       });
     } catch (err) {
-      if (!isMissingColumnError(err, "is_early_checkout") && !isMissingColumnError(err, "check_out_selfie_url")) {
-        throw err;
-      }
+      const canLegacy =
+        isAttendanceColumnMissingError(err) ||
+        isMissingColumnError(err, "is_early_checkout") ||
+        isMissingColumnError(err, "check_out_selfie_url");
+      if (!canLegacy) throw err;
+
       console.warn(`[AttendanceService] attendance checkout new columns missing; fallback update payload (db=${runtimeDbHost()})`);
       await prisma.$executeRaw`
         update attendance
-        set clock_out = ${now}, updated_at = now()
-        where id = ${existing.id}
+        set clock_out = ${now}
+        where id = ${existing.id}::uuid
       `;
-      const updated = await prisma.attendance.findUnique({
-        where: { id: existing.id },
-        select: {
-          id: true,
-          employeeId: true,
-          date: true,
-          clockIn: true,
-          clockOut: true,
-          status: true,
-          notes: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      if (!updated) throw new Error("Failed to update attendance fallback record");
-      return updated as unknown as Attendance;
+      return fetchAttendanceMinimalById(existing.id);
     }
   }
 
