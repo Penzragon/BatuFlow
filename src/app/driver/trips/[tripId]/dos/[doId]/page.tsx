@@ -9,6 +9,7 @@ import {
   XCircle, ExternalLink, Loader2, LocateFixed
 } from "lucide-react";
 import { toast } from "sonner";
+import { drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
 import { format } from "date-fns";
 import Image from "next/image";
 
@@ -121,25 +122,12 @@ export default function DODeliveryActionPage() {
 
         ctx.drawImage(img, 0, 0);
 
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const now = new Date();
-        const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())} WIB`;
         const customerLabel = (dOrder?.salesOrder?.customer?.name || "CUSTOMER").slice(0, 26);
-
-        const line1 = `${dOrder?.doNumber || "DO"} | ${customerLabel}`;
-        const line2 = stamp;
-
-        const barH = Math.max(44, Math.round(canvas.height * 0.12));
-        ctx.fillStyle = "rgba(0,0,0,0.65)";
-        ctx.fillRect(0, canvas.height - barH, canvas.width, barH);
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = `${Math.max(14, Math.round(canvas.width * 0.028))}px Arial, sans-serif`;
-        ctx.fillText(line1, 10, canvas.height - Math.round(barH * 0.58));
-
-        ctx.fillStyle = "#FFD700";
-        ctx.font = `${Math.max(12, Math.round(canvas.width * 0.022))}px Arial, sans-serif`;
-        ctx.fillText(line2, 10, canvas.height - Math.round(barH * 0.2));
+        drawPhotoCaptionBar(ctx, canvas, {
+          line1: `${dOrder?.doNumber || "DO"} | ${customerLabel}`,
+          line2: formatPhotoCaptionTimestamp(),
+          variant: "compact",
+        });
 
         canvas.toBlob((blob) => {
           if (!blob) return;

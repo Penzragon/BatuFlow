@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import Link from "next/link";
 
+import { dataUrlToBlob } from "@/lib/client-photo-watermark";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -250,7 +251,7 @@ export default function VisitsPage() {
       }
       if (notes) formData.append("notes", notes);
       if (selfieData) {
-        const blob = await (await fetch(selfieData)).blob();
+        const blob = dataUrlToBlob(selfieData);
         formData.append("selfie", blob, "selfie.jpg");
       }
 

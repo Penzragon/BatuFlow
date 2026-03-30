@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { LayoutDashboard, Map, History, LogOut, Languages } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -32,6 +33,30 @@ export default function DriverMobileLayout({ children, session }: DriverMobileLa
   const router = useRouter();
   const currentLocale = useLocale();
   const t = useTranslations("driver");
+  const [canClockOut, setCanClockOut] = useState(false);
+  const nextGatePath = `/attendance/check-in?next=${encodeURIComponent(pathname || "/driver/dashboard")}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/attendance/gate-status", { cache: "no-store" });
+        const json = (await res.json()) as {
+          success?: boolean;
+          data?: { hasEmployee?: boolean; checkedIn?: boolean; checkedOut?: boolean };
+        };
+        const nextCanClockOut = Boolean(
+          json.success && json.data?.hasEmployee && json.data?.checkedIn && !json.data?.checkedOut
+        );
+        if (!cancelled) setCanClockOut(nextCanClockOut);
+      } catch {
+        if (!cancelled) setCanClockOut(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   function handleLocaleChange(locale: Locale) {
     document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
@@ -70,13 +95,23 @@ export default function DriverMobileLayout({ children, session }: DriverMobileLa
             </DropdownMenuContent>
           </DropdownMenu>
           <span className="max-w-[100px] truncate text-xs text-muted-foreground">{session.user?.name}</span>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="rounded p-1 text-muted-foreground hover:text-foreground"
-            aria-label="Logout"
-          >
-            <LogOut size={16} />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("logout")}>
+                <LogOut size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canClockOut && (
+                <DropdownMenuItem asChild>
+                  <Link href={nextGatePath}>Clock Out</Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+                {t("logout")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

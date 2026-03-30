@@ -24,8 +24,56 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    authorized({ auth: session }) {
-      return !!session?.user;
+    async authorized({ auth: session, request }) {
+      if (!session?.user) return false;
+
+      const pathname = request.nextUrl.pathname;
+      const role = (session.user as { role?: string }).role;
+      const shouldGate =
+        role === "STAFF" ||
+        role === "MANAGER" ||
+        role === "ADMIN" ||
+        role === "DRIVER" ||
+        role === "WAREHOUSE_STAFF";
+
+      if (!shouldGate) return true;
+
+      const bypassPrefixes = [
+        "/attendance/check-in",
+        "/api/attendance/clock-in",
+        "/api/attendance/clock-out",
+        "/api/attendance/gate-status",
+        "/api/auth",
+        "/login",
+        "/_next",
+      ];
+      const isBypassed =
+        bypassPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
+        pathname === "/favicon.ico" ||
+        /\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/i.test(pathname);
+
+      if (isBypassed) return true;
+
+      try {
+        const gateUrl = new URL("/api/attendance/gate-status", request.nextUrl.origin);
+        const res = await fetch(gateUrl.toString(), {
+          headers: { cookie: request.headers.get("cookie") ?? "" },
+        });
+        const json = await res.json();
+        const checkedIn = Boolean(json?.success && json?.data?.checkedIn);
+        if (!checkedIn) {
+          const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+          return Response.redirect(
+            new URL(`/attendance/check-in?next=${encodeURIComponent(next)}`, request.nextUrl)
+          );
+        }
+        return true;
+      } catch {
+        const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+        return Response.redirect(
+          new URL(`/attendance/check-in?next=${encodeURIComponent(next)}`, request.nextUrl)
+        );
+      }
     },
     redirect({ url, baseUrl }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;

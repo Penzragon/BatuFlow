@@ -694,7 +694,8 @@
     "deliveryFailed": "Delivery Failed",
     "reason": "Reason",
     "markAsFailed": "Mark as Failed",
-    "deliveredProgress": "delivered"
+    "deliveredProgress": "delivered",
+    "logout": "Logout"
   },
   "goodsReceipts": {
     "title": "Goods Receipts",
@@ -864,7 +865,8 @@
     "todaysReceipts": "Today's Receipts",
     "lowStock": "Low Stock",
     "searchProduct": "Search product...",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "logout": "Logout"
   },
   "finance": {
     "title": "Finance",
@@ -1180,7 +1182,107 @@
     "totalAbsent": "Total Absent",
     "totalHalfDay": "Total Half Day",
     "noRecords": "No attendance records",
-    "searchPlaceholder": "Search..."
+    "searchPlaceholder": "Search...",
+    "tabs": {
+      "report": "Report",
+      "details": "Details",
+      "schedule": "Schedules",
+      "correction": "Corrections",
+      "manual": "Manual entry"
+    },
+    "report": {
+      "earlyCheckout": "Early checkout",
+      "overtime": "Overtime"
+    },
+    "details": {
+      "title": "Attendance details",
+      "absent": "Absent",
+      "halfDay": "Half day",
+      "viewDays": "View days",
+      "dayListTitle": "Daily records",
+      "noDays": "No records this month",
+      "lateMin": "Late (min)"
+    },
+    "schedule": {
+      "title": "Employee schedule",
+      "selectEmployee": "Select employee",
+      "start": "Start",
+      "end": "End",
+      "lateTolerance": "Late tolerance (min)",
+      "save": "Save schedule",
+      "selectFirst": "Select an employee first",
+      "updated": "Schedule updated",
+      "failed": "Failed to save schedule"
+    },
+    "correction": {
+      "title": "Correction requests",
+      "selectRecord": "Attendance day",
+      "pickRecord": "Select a record",
+      "loadRecords": "Load days",
+      "request": "Submit request",
+      "submitted": "Correction request submitted",
+      "failed": "Request failed",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reviewed": "Correction updated",
+      "noLinkedEmployee": "Your user is not linked to an employee record. You cannot submit a correction request.",
+      "needRecord": "Select an attendance record",
+      "requestHint": "Requests apply to your own attendance only. Logged-in as: {name}."
+    },
+    "manual": {
+      "title": "Manual attendance",
+      "hint": "For HR: record present, late, absent, or half-day without clock events.",
+      "submit": "Save record",
+      "saved": "Attendance saved",
+      "failed": "Failed to save"
+    },
+    "gate": {
+      "title": "Attendance check-in",
+      "subtitle": "Check-in is required before accessing BatuFlow.",
+      "checkedInLabel": "Checked in",
+      "checkedOutLabel": "Checked out",
+      "yes": "Yes",
+      "no": "No",
+      "loading": "Loading status…",
+      "noEmployee": "No active employee profile is linked to your account. Contact HR.",
+      "clockIn": "Check in",
+      "clockOut": "Check out",
+      "successClockIn": "Check-in successful",
+      "successClockOut": "Check-out successful",
+      "watermarkIn": "CLOCK_IN",
+      "watermarkOut": "CLOCK_OUT",
+      "gps": {
+        "title": "GPS",
+        "refresh": "Refresh",
+        "loading": "Getting GPS...",
+        "accuracy": "Accuracy: ±{meters} m",
+        "notCaptured": "GPS not captured yet",
+        "retry": "Retry GPS",
+        "retryHint": "Enable Location permission and tap refresh.",
+        "softAccuracyWarning": "Low GPS accuracy (±{meters} m). Move to an open area and refresh if possible."
+      },
+      "photo": {
+        "title": "Photo",
+        "selectActionFirst": "Choose check-in or check-out first.",
+        "startCamera": "Start camera",
+        "capture": "Capture",
+        "retake": "Retake",
+        "previewAlt": "Attendance photo preview",
+        "retryCamera": "Retry camera",
+        "retryHint": "Allow Camera permission and try again."
+      },
+      "errors": {
+        "geolocation": "Geolocation is not available",
+        "gpsFailed": "Could not capture GPS",
+        "cameraFailed": "Could not open camera",
+        "gpsRequired": "GPS is required",
+        "photoRequired": "Photo is required",
+        "cameraPermission": "Camera permission blocked. Allow camera access and try again.",
+        "gpsPermission": "Location permission blocked. Enable location and retry.",
+        "gpsTimeout": "GPS timed out. Move to an open area and retry.",
+        "actionFailed": "Action failed"
+      }
+    }
   },
   "leave": {
     "title": "Leave Requests",
