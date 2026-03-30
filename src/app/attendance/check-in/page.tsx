@@ -6,7 +6,7 @@ import { Camera, MapPin, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { dataUrlToBlob, drawPhotoCaptionBar, formatPhotoCaptionTimestamp } from "@/lib/client-photo-watermark";
 
 interface GateStatus {
@@ -34,6 +34,15 @@ export default function AttendanceCheckInPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const nextAfterCheckInRaw = searchParams.get("next");
+  const nextAfterCheckIn =
+    nextAfterCheckInRaw &&
+    nextAfterCheckInRaw.startsWith("/") &&
+    !nextAfterCheckInRaw.startsWith("/attendance/check-in")
+      ? nextAfterCheckInRaw
+      : "/dashboard";
 
   const refreshStatus = useCallback(async () => {
     const res = await fetch("/api/attendance/gate-status", { cache: "no-store" });
@@ -179,7 +188,7 @@ export default function AttendanceCheckInPage() {
       toast.success(type === "clock-in" ? t("successClockIn") : t("successClockOut"));
       setSelfieData(null);
       await refreshStatus();
-      if (type === "clock-in") router.push("/dashboard");
+      if (type === "clock-in") router.push(nextAfterCheckIn);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errors.actionFailed"));
     } finally {

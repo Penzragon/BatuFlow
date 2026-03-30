@@ -57,11 +57,17 @@ export const authConfig: NextAuthConfig = {
         const json = await res.json();
         const checkedIn = Boolean(json?.success && json?.data?.checkedIn);
         if (!checkedIn) {
-          return Response.redirect(new URL("/attendance/check-in", request.nextUrl));
+          const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+          return Response.redirect(
+            new URL(`/attendance/check-in?next=${encodeURIComponent(next)}`, request.nextUrl)
+          );
         }
         return true;
       } catch {
-        return Response.redirect(new URL("/attendance/check-in", request.nextUrl));
+        const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+        return Response.redirect(
+          new URL(`/attendance/check-in?next=${encodeURIComponent(next)}`, request.nextUrl)
+        );
       }
     },
     redirect({ url, baseUrl }) {
