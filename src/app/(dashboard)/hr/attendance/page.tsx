@@ -126,6 +126,7 @@ export default function AttendancePage() {
     notes: "",
   });
   const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<{ src: string; title: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -732,6 +733,7 @@ export default function AttendancePage() {
                   <TableHead>{t("clockIn")}</TableHead>
                   <TableHead>{t("clockOut")}</TableHead>
                   <TableHead>{t("details.lateMin")}</TableHead>
+                  <TableHead>Selfie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -748,11 +750,73 @@ export default function AttendancePage() {
                       {d.clockOut ? format(new Date(d.clockOut), "yyyy-MM-dd HH:mm") : "—"}
                     </TableCell>
                     <TableCell>{d.lateMinutes > 0 ? d.lateMinutes : "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {d.checkInSelfieUrl ? (
+                          <button
+                            type="button"
+                            className="rounded border"
+                            onClick={() =>
+                              setPhotoPreview({
+                                src: d.checkInSelfieUrl as string,
+                                title: `${t("clockIn")} Selfie`,
+                              })
+                            }
+                            aria-label={`${t("clockIn")} selfie`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- attendance selfies are data URLs */}
+                            <img
+                              src={d.checkInSelfieUrl}
+                              alt={`${t("clockIn")} selfie`}
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                        {d.checkOutSelfieUrl ? (
+                          <button
+                            type="button"
+                            className="rounded border"
+                            onClick={() =>
+                              setPhotoPreview({
+                                src: d.checkOutSelfieUrl as string,
+                                title: `${t("clockOut")} Selfie`,
+                              })
+                            }
+                            aria-label={`${t("clockOut")} selfie`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- attendance selfies are data URLs */}
+                            <img
+                              src={d.checkOutSelfieUrl}
+                              alt={`${t("clockOut")} selfie`}
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(photoPreview)} onOpenChange={(open) => !open && setPhotoPreview(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{photoPreview?.title ?? "Selfie"}</DialogTitle>
+          </DialogHeader>
+          {photoPreview?.src ? (
+            <div className="overflow-hidden rounded-md border bg-black/70">
+              {/* eslint-disable-next-line @next/next/no-img-element -- attendance selfies are data URLs */}
+              <img src={photoPreview.src} alt={photoPreview.title} className="max-h-[70vh] w-full object-contain" />
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
