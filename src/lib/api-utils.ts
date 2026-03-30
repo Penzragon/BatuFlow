@@ -1,5 +1,30 @@
 import type { PaginationParams } from "@/types";
 
+function safeDbTarget() {
+  const raw =
+    process.env.DATABASE_URL_UNPOOLED ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.DATABASE_URL ??
+    null;
+
+  if (!raw) return { dbTarget: "(missing DATABASE_URL)" };
+
+  try {
+    const u = new URL(raw);
+    const host = u.host;
+    const db = u.pathname?.replace(/^\//, "") || "(unknown-db)";
+    const pooled = host.includes("-pooler.");
+    const hasPgbouncer = u.searchParams.get("pgbouncer") === "true";
+    return {
+      dbTarget: `${u.protocol}//${host}/${db}`,
+      dbPooled: pooled,
+      dbPgbouncer: hasPgbouncer,
+    };
+  } catch {
+    return { dbTarget: "(unparseable DATABASE_URL)" };
+  }
+}
+
 /**
  * Wraps an API route handler with standard error handling.
  * Catches errors and returns appropriate JSON responses with status codes.
@@ -13,9 +38,9 @@ export function apiHandler(
     } catch (err) {
       const message = err instanceof Error ? err.message : "Internal server error";
       try {
-        console.error("[apiHandler]", req.method, new URL(req.url).pathname, message);
+        console.error("[apiHandler]", req.method, new URL(req.url).pathname, message, safeDbTarget());
       } catch {
-        console.error("[apiHandler]", message);
+        console.error("[apiHandler]", message, safeDbTarget());
       }
       const status = err instanceof Error && "status" in err
         ? (err as Error & { status: number }).status
