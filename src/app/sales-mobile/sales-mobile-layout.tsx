@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { ClockOutShortcut } from "@/components/attendance/clock-out-shortcut";
 
 interface SalesMobileLayoutProps {
   children: React.ReactNode;
@@ -51,6 +52,7 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
           <span className="text-xs text-muted-foreground">{t("appLabel")}</span>
         </div>
         <div className="flex items-center gap-2">
+          <ClockOutShortcut />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("changeLanguage")}>

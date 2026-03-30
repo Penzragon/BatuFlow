@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { ClockOutShortcut } from "@/components/attendance/clock-out-shortcut";
 
 interface Props {
   children: React.ReactNode;
@@ -52,6 +53,7 @@ export default function WarehouseMobileLayout({ children, session }: Props) {
           <span className="text-xs text-muted-foreground">{t("warehouseLabel")}</span>
         </div>
         <div className="flex items-center gap-1">
+          <ClockOutShortcut />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Change language">

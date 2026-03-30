@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TopBar } from "@/components/layout/top-bar";
+import { ClockOutShortcut } from "@/components/attendance/clock-out-shortcut";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardShellProps {
@@ -44,6 +45,9 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
       <AppSidebar />
       <SidebarInset>
         <TopBar session={session} />
+        <div className="border-b bg-white px-4 py-2 md:px-6">
+          <ClockOutShortcut />
+        </div>
         <div className="flex-1 bg-gray-50 p-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
