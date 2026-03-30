@@ -694,7 +694,8 @@
     "deliveryFailed": "Delivery Failed",
     "reason": "Reason",
     "markAsFailed": "Mark as Failed",
-    "deliveredProgress": "delivered"
+    "deliveredProgress": "delivered",
+    "logout": "Logout"
   },
   "goodsReceipts": {
     "title": "Goods Receipts",
@@ -864,7 +865,8 @@
     "todaysReceipts": "Today's Receipts",
     "lowStock": "Low Stock",
     "searchProduct": "Search product...",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "logout": "Logout"
   },
   "finance": {
     "title": "Finance",

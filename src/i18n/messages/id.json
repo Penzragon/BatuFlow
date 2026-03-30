@@ -670,7 +670,8 @@
     "deliveryFailed": "Pengiriman Gagal",
     "reason": "Alasan",
     "markAsFailed": "Tandai Gagal",
-    "deliveredProgress": "terkirim"
+    "deliveredProgress": "terkirim",
+    "logout": "Keluar"
   },
   "goodsReceipts": {
     "title": "Penerimaan Barang",
@@ -840,7 +841,8 @@
     "todaysReceipts": "Penerimaan Hari Ini",
     "lowStock": "Stok Rendah",
     "searchProduct": "Cari produk...",
-    "noResults": "Tidak ada hasil"
+    "noResults": "Tidak ada hasil",
+    "logout": "Keluar"
   },
   "finance": {
     "title": "Keuangan",
