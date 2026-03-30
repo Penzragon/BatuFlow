@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { LayoutDashboard, Users, ClipboardCheck, ShoppingCart, LogOut, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ClockOutShortcut } from "@/components/attendance/clock-out-shortcut";
 
 interface SalesMobileLayoutProps {
   children: React.ReactNode;
@@ -34,6 +34,32 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
   const router = useRouter();
   const currentLocale = useLocale();
   const t = useTranslations("salesMobile");
+  const [canClockOut, setCanClockOut] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/attendance/gate-status", { cache: "no-store" });
+        const json = (await res.json()) as {
+          success?: boolean;
+          data?: { hasEmployee?: boolean; checkedIn?: boolean; checkedOut?: boolean };
+        };
+        const nextCanClockOut = Boolean(
+          json.success &&
+            json.data?.hasEmployee &&
+            json.data?.checkedIn &&
+            !json.data?.checkedOut
+        );
+        if (!cancelled) setCanClockOut(nextCanClockOut);
+      } catch {
+        if (!cancelled) setCanClockOut(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   function handleLocaleChange(locale: Locale) {
     document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
@@ -52,7 +78,6 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
           <span className="text-xs text-muted-foreground">{t("appLabel")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ClockOutShortcut />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("changeLanguage")}>
@@ -73,13 +98,23 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
           </DropdownMenu>
 
           <span className="max-w-[110px] truncate text-xs text-muted-foreground">{session.user?.name}</span>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="rounded p-1 text-muted-foreground hover:text-foreground"
-            aria-label={t("logout")}
-          >
-            <LogOut size={16} />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("logout")}>
+                <LogOut size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canClockOut && (
+                <DropdownMenuItem asChild>
+                  <Link href="/attendance/check-in">Clock Out</Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+                {t("logout")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
