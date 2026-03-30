@@ -41,7 +41,7 @@ export default function AttendanceCheckInPage() {
     if (json.success) {
       const data = json.data as GateStatus;
       setGate(data);
-      if (data.checkedIn) {
+      if (data.checkedIn && data.checkedOut) {
         setTimeout(() => router.push("/dashboard"), 500);
       }
     }
