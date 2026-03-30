@@ -46,10 +46,11 @@ export function ClockOutShortcut() {
   }, [refresh]);
 
   if (pathname === "/attendance/check-in" || !show) return null;
+  const next = encodeURIComponent(pathname || "/dashboard");
 
   return (
     <Button asChild size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
-      <Link href="/attendance/check-in" aria-label="Clock out">
+      <Link href={`/attendance/check-in?next=${next}`} aria-label="Clock out">
         <LogOut size={14} />
         Clock Out
       </Link>

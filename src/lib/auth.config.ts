@@ -29,7 +29,12 @@ export const authConfig: NextAuthConfig = {
 
       const pathname = request.nextUrl.pathname;
       const role = (session.user as { role?: string }).role;
-      const shouldGate = role === "STAFF" || role === "MANAGER" || role === "ADMIN";
+      const shouldGate =
+        role === "STAFF" ||
+        role === "MANAGER" ||
+        role === "ADMIN" ||
+        role === "DRIVER" ||
+        role === "WAREHOUSE_STAFF";
 
       if (!shouldGate) return true;
 

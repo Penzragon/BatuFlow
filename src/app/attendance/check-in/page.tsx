@@ -51,7 +51,7 @@ export default function AttendanceCheckInPage() {
       const data = json.data as GateStatus;
       setGate(data);
       if (data.checkedIn && data.checkedOut) {
-        setTimeout(() => router.push("/dashboard"), 500);
+        setTimeout(() => router.push(nextAfterCheckIn), 500);
       }
     }
   }, [router]);
@@ -188,7 +188,7 @@ export default function AttendanceCheckInPage() {
       toast.success(type === "clock-in" ? t("successClockIn") : t("successClockOut"));
       setSelfieData(null);
       await refreshStatus();
-      if (type === "clock-in") router.push(nextAfterCheckIn);
+      router.push(nextAfterCheckIn);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errors.actionFailed"));
     } finally {

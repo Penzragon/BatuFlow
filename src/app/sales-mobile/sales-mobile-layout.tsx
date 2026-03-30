@@ -34,6 +34,7 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
   const router = useRouter();
   const currentLocale = useLocale();
   const t = useTranslations("salesMobile");
+  const nextGatePath = `/attendance/check-in?next=${encodeURIComponent(pathname || "/sales-mobile/dashboard")}`;
   const [canClockOut, setCanClockOut] = useState(false);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function SalesMobileLayout({ children, session }: SalesMobileLayo
             <DropdownMenuContent align="end">
               {canClockOut && (
                 <DropdownMenuItem asChild>
-                  <Link href="/attendance/check-in">Clock Out</Link>
+                  <Link href={nextGatePath}>Clock Out</Link>
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
